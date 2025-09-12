@@ -46,16 +46,16 @@ if not df.empty:
         df_filtrado = df_filtrado[df_filtrado["agencia"] == agencia_sel]
 
    if prazo_sel != "Todos":
-    hoje = pd.Timestamp('today').normalize()  # só a data
-    df_filtrado["data_fim"] = pd.to_datetime(df_filtrado["data_fim"], errors="coerce", dayfirst=True)
+       hoje = pd.Timestamp('today').normalize()  # só a data
+       df_filtrado["data_fim"] = pd.to_datetime(df_filtrado["data_fim"], errors="coerce", dayfirst=True)
     
-    mask = df_filtrado["data_fim"].notna()
-    delta = (df_filtrado["data_fim"] - hoje).dt.days
+       mask = df_filtrado["data_fim"].notna()
+       delta = (df_filtrado["data_fim"] - hoje).dt.days
     
-    if prazo_sel == "Até 7 dias":
-        df_filtrado = df_filtrado[mask & (delta <= 7)]
-    elif prazo_sel == "Mais de 7 dias":
-        df_filtrado = df_filtrado[mask & (delta > 7)]
+       if prazo_sel == "Até 7 dias":
+           df_filtrado = df_filtrado[mask & (delta <= 7)]
+       elif prazo_sel == "Mais de 7 dias":
+           df_filtrado = df_filtrado[mask & (delta > 7)]
 
 else:
     df_filtrado = pd.DataFrame()
