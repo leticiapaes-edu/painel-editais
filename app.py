@@ -20,7 +20,7 @@ st.set_page_config(
 # - CSV no Google Drive: https://drive.google.com/uc?id=SEU_ARQUIVO_ID
 # - Google Sheets: https://docs.google.com/spreadsheets/d/SEU_ARQUIVO_ID/export?format=csv
 
-URL = "https://drive.google.com/uc?id=SEU_ARQUIVO_ID"  # troque pelo seu link
+URL = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4"
 
 @st.cache_data
 def carregar_dados():
