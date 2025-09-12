@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Configuração inicial
 st.set_page_config(
-    page_title="Painel de Editais - AEDB",
+    page_title="Painel de Editais",
     layout="wide",
     initial_sidebar_state="expanded"
 )
