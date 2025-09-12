@@ -16,7 +16,7 @@ st.set_page_config(
 # =======================
 # Carregar dados (Drive ou Sheets)
 # =======================
-URL = "https://docs.google.com/spreadsheets/d/SEU_ID/export?format=csv"  # troque pelo seu link
+URL = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4/export?format=csv"
 
 @st.cache_data
 def carregar_dados():
