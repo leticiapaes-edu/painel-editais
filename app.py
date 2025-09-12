@@ -63,7 +63,7 @@ with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
     - Apenas editais com inscrições abertas são exibidos (encerrados não aparecem).
-    - Em caso de erros ou dúvidas, utilize a caixinha de **Reportar erro ou dúvida** no menu lateral.
+    - Em caso de erro ou dúvidas, utilize a caixinha no menu lateral.
     - Editais que encerrarem em até 7 dias aparecem destacados em amarelo.
     """)
 
