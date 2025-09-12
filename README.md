@@ -1,6 +1,6 @@
 # Painel de Editais - AEDB
 
-Aplicativo em **Streamlit** que lista editais de fomento a partir de uma base de dados hospedada no Google Drive.
+Aplicativo em **Streamlit** que lista editais de fomento a partir de uma base de dados hospedada no Google Drive ou em uma Planilha Google Sheets.
 
 ## 🚀 Como rodar localmente
 
