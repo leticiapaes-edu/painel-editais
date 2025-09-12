@@ -16,11 +16,7 @@ st.set_page_config(
 # =======================
 # Carregar dados (Drive ou Sheets)
 # =======================
-# Exemplos de URL:
-# - CSV no Google Drive: https://drive.google.com/uc?id=SEU_ARQUIVO_ID
-# - Google Sheets: https://docs.google.com/spreadsheets/d/SEU_ARQUIVO_ID/export?format=csv
-
-URL = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4"
+URL = "https://docs.google.com/spreadsheets/d/SEU_ID/export?format=csv"  # troque pelo seu link
 
 @st.cache_data
 def carregar_dados():
@@ -28,7 +24,7 @@ def carregar_dados():
     for sep in [";", ","]:
         for enc in ["utf-8", "latin-1"]:
             try:
-                df = pd.read_csv(URL, sep=sep, encoding=enc)
+                df = pd.read_csv(URL, sep=sep, encoding=enc, on_bad_lines="skip")
                 if not df.empty:
                     return df
             except Exception as e:
@@ -38,6 +34,17 @@ def carregar_dados():
     return pd.DataFrame()
 
 df = carregar_dados()
+
+# =======================
+# Normalizar colunas
+# =======================
+if not df.empty:
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+    colunas_necessarias = ["titulo", "agencia", "data_inicio", "data_fim", "tema", "link"]
+    for col in colunas_necessarias:
+        if col not in df.columns:
+            df[col] = None
 
 # =======================
 # Sidebar
@@ -180,4 +187,3 @@ fig, ax = plt.subplots(figsize=(8,4))
 ax.imshow(wc, interpolation="bilinear")
 ax.axis("off")
 st.pyplot(fig)
-
