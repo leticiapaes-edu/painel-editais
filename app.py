@@ -14,18 +14,28 @@ st.set_page_config(
 )
 
 # =======================
-# Carregar dados (Google Drive CSV)
+# Carregar dados (Drive ou Sheets)
 # =======================
-# Substitua pelo link direto do seu arquivo no Google Drive (formato: https://drive.google.com/uc?id=ARQUIVO_ID)
-URL = "https://drive.google.com/file/d/16KynnqClb97FeozpdJAYL0TEQ34CktH5"
+# Exemplos de URL:
+# - CSV no Google Drive: https://drive.google.com/uc?id=SEU_ARQUIVO_ID
+# - Google Sheets: https://docs.google.com/spreadsheets/d/SEU_ARQUIVO_ID/export?format=csv
+
+URL = "https://drive.google.com/uc?id=SEU_ARQUIVO_ID"  # troque pelo seu link
 
 @st.cache_data
 def carregar_dados():
-    try:
-        df = pd.read_csv(URL, sep=";", encoding="utf-8")
-    except UnicodeDecodeError:
-        df = pd.read_csv(URL, sep=";", encoding="latin-1")
-    return df
+    erros = []
+    for sep in [";", ","]:
+        for enc in ["utf-8", "latin-1"]:
+            try:
+                df = pd.read_csv(URL, sep=sep, encoding=enc)
+                if not df.empty:
+                    return df
+            except Exception as e:
+                erros.append(f"sep='{sep}', enc='{enc}': {e}")
+    st.error("⚠️ Não foi possível carregar os dados do link informado.")
+    st.write("Tentativas que falharam:", erros)
+    return pd.DataFrame()
 
 df = carregar_dados()
 
@@ -170,3 +180,4 @@ fig, ax = plt.subplots(figsize=(8,4))
 ax.imshow(wc, interpolation="bilinear")
 ax.axis("off")
 st.pyplot(fig)
+
