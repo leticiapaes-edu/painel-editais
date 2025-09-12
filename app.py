@@ -3,6 +3,8 @@ import pandas as pd
 from datetime import datetime
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+import gspread
+from google.oauth2.service_account import Credentials
 
 # =======================
 # Configuração inicial
@@ -14,7 +16,7 @@ st.set_page_config(
 )
 
 # =======================
-# Carregar dados (Drive ou Sheets)
+# Carregar dados (Google Sheets)
 # =======================
 URL = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4/export?format=csv"
 
@@ -41,6 +43,10 @@ df = carregar_dados()
 if not df.empty:
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
 
+    # Normalizar agencia
+    if "agencia" in df.columns:
+        df["agencia"] = df["agencia"].fillna("").astype(str).str.strip().str.upper()
+
     colunas_necessarias = ["titulo", "agencia", "data_inicio", "data_fim", "tema", "link"]
     for col in colunas_necessarias:
         if col not in df.columns:
@@ -56,12 +62,13 @@ st.sidebar.markdown(
     <div style='font-size:12px; margin-top:10px; color:#444;'>
         Gerado no GPAQ, para uso exclusivo dos docentes e funcionários da AEDB.
     </div>
-    """, unsafe_allow_html=True
+    """,
+    unsafe_allow_html=True
 )
 
 # Filtros
 if not df.empty:
-    agencias = df["agencia"].dropna().unique().tolist()
+    agencias = sorted([a for a in df["agencia"].dropna().unique().tolist() if a])
     agencias_selecionadas = st.sidebar.multiselect(
         "Agência de fomento", agencias, default=agencias
     )
@@ -85,9 +92,27 @@ with st.sidebar.form("feedback_form"):
         if mensagem.strip() == "":
             st.sidebar.error("Por favor, escreva uma mensagem antes de enviar.")
         else:
-            with open("feedback.csv", "a", encoding="utf-8") as f:
-                f.write(f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')};{nome};{email};{mensagem}\n")
-            st.sidebar.success("✅ Obrigado! Sua mensagem foi registrada.")
+            try:
+                # Conectar ao Google Sheets (credenciais via secrets do Streamlit)
+                scope = ["https://spreadsheets.google.com/feeds",
+                         "https://www.googleapis.com/auth/drive"]
+                creds = Credentials.from_service_account_info(
+                    st.secrets["gcp_service_account"], scopes=scope
+                )
+                client = gspread.authorize(creds)
+
+                # Abrir planilha de feedback (pelo nome)
+                sheet = client.open("feedback_editais").sheet1
+
+                # Adicionar linha
+                sheet.append_row([
+                    datetime.today().strftime("%Y-%m-%d %H:%M:%S"),
+                    nome, email, mensagem
+                ])
+
+                st.sidebar.success("✅ Obrigado! Sua mensagem foi registrada.")
+            except Exception as e:
+                st.sidebar.error(f"Erro ao salvar feedback: {e}")
 
 # =======================
 # Filtros aplicados
@@ -127,7 +152,8 @@ st.markdown(
     - Em caso de erros ou dúvidas, utilize a caixinha de <i>Reportar erro ou dúvida</i> no menu lateral.<br>
     - Editais que encerram em até 7 dias aparecem destacados em amarelo.  
     </div>
-    """, unsafe_allow_html=True
+    """,
+    unsafe_allow_html=True
 )
 
 # =======================
