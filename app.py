@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.title("📊 Painel de Editais - AEDB")
+st.title("📊 Painel de Editais de Fomento à Pesquisa e Extensão")
 
 # ===========================
 # Carregar dados do Google Sheets
@@ -68,7 +68,6 @@ with st.expander("📌 Orientações", expanded=True):
     - A lista é atualizada semanalmente, sempre às segundas.
     - Apenas editais com inscrições abertas são exibidos (encerrados não aparecem).
     - Em caso de erro ou dúvidas, utilize a caixinha no menu lateral.
-    - Editais que encerrarem em até 7 dias aparecem destacados em amarelo.
     """)
 
 # ===========================
