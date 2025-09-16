@@ -5,6 +5,8 @@ from wordcloud import WordCloud
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+from collections import Counter
+from sklearn.feature_extraction.text import CountVectorizer
 
 # Configuração inicial
 st.set_page_config(
@@ -88,9 +90,6 @@ if not df_filtrado.empty:
 else:
     st.warning("Nenhum edital disponível no momento.")
 
-from collections import Counter
-from sklearn.feature_extraction.text import CountVectorizer
-
 # ===========================
 # Nuvem de palavras
 # ===========================
@@ -98,45 +97,44 @@ st.subheader("📊 Temas mais frequentes")
 
 if not df.empty and "tema" in df.columns:
 
-    # Junta todos os textos
+    # Junta todos os temas em um corpus
     corpus = df["tema"].dropna().astype(str).str.lower().tolist()
 
-    # Vetorizador para unigrams, bigrams e trigrams
-    vectorizer = CountVectorizer(ngram_range=(1,3), token_pattern=r"(?u)\b\w+\b")
+    # Vetorizador para unigramas, bigramas e trigramas
+    vectorizer = CountVectorizer(ngram_range=(1, 3), token_pattern=r"(?u)\\b\\w+\\b")
     X = vectorizer.fit_transform(corpus)
 
     # Frequências
     freqs = dict(zip(vectorizer.get_feature_names_out(), X.toarray().sum(axis=0)))
 
-    # Filtra apenas os n-grams que aparecem pelo menos 2 vezes
-    freqs_filtrados = {k.replace(" ", "_"): v for k,v in freqs.items() if v > 1}
+    # Mantém apenas termos que aparecem pelo menos 2 vezes
+    freqs_filtrados = {k.replace(" ", "_"): v for k, v in freqs.items() if v > 1}
 
-    # Gera nuvem
-    wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
+    if freqs_filtrados:
+        wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
 
-    fig, ax = plt.subplots()
-    ax.imshow(wc, interpolation="bilinear")
-    ax.axis("off")
+        fig, ax = plt.subplots()
+        ax.imshow(wc, interpolation="bilinear")
+        ax.axis("off")
 
-    # Substitui "_" por espaço na renderização
-    for (word, freq), fontsize, position, orientation, color in wc.layout_:
-        ax.text(
-            position[0],
-            position[1],
-            word.replace("_", " "),
-            fontsize=fontsize,
-            color=color,
-            rotation=0,
-            ha="center",
-            va="center"
-        )
+        # redesenha os textos substituindo '_' por espaço
+        for (word, freq), fontsize, position, orientation, color in wc.layout_:
+            ax.text(
+                position[0],
+                position[1],
+                word.replace("_", " "),
+                fontsize=fontsize,
+                color=color,
+                rotation=0,
+                ha="center",
+                va="center"
+            )
 
-    st.pyplot(fig)
-
+        st.pyplot(fig)
+    else:
+        st.info("Nenhum tema frequente encontrado.")
 else:
     st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
-
-
 
 # ===========================
 # Feedback no Google Sheets
