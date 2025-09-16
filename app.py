@@ -94,7 +94,32 @@ else:
 st.subheader("📊 Temas mais frequentes")
 
 if not df.empty and "tema" in df.columns:
-    texto = " ".join(df["tema"].dropna().astype(str))
+
+    # Lista de termos compostos que você quer preservar
+    termos_compostos = [
+        "enfrentamento ao racismo",
+        "serviços ecossistêmicos",
+        "ações afirmativas",
+        "educação inclusiva"
+    ]
+
+    def preprocessar_temas(serie_temas, compostos):
+        termos = []
+        for tema in serie_temas.dropna().astype(str):
+            # Divide cada célula em sub-termos (separados por ;)
+            partes = [t.strip().lower() for t in tema.split(";") if t.strip()]
+            termos.extend(partes)
+
+        # Junta em texto único
+        texto = " ".join(termos)
+
+        # Substitui compostos por underline
+        for termo in compostos:
+            texto = texto.replace(termo, termo.replace(" ", "_"))
+        return texto
+
+    texto = preprocessar_temas(df["tema"], termos_compostos)
+
     if texto.strip():
         wc = WordCloud(width=800, height=400, background_color="white").generate(texto)
         fig, ax = plt.subplots()
@@ -105,6 +130,7 @@ if not df.empty and "tema" in df.columns:
         st.info("Nenhum tema informado ainda.")
 else:
     st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
+
 
 # ===========================
 # Feedback no Google Sheets
