@@ -88,6 +88,9 @@ if not df_filtrado.empty:
 else:
     st.warning("Nenhum edital disponível no momento.")
 
+from collections import Counter
+from sklearn.feature_extraction.text import CountVectorizer
+
 # ===========================
 # Nuvem de palavras
 # ===========================
@@ -95,41 +98,44 @@ st.subheader("📊 Temas mais frequentes")
 
 if not df.empty and "tema" in df.columns:
 
-    # Lista de termos compostos que você quer preservar
-    termos_compostos = [
-        "enfrentamento ao racismo",
-        "serviços ecossistêmicos",
-        "ações afirmativas",
-        "educação inclusiva"
-    ]
+    # Junta todos os textos
+    corpus = df["tema"].dropna().astype(str).str.lower().tolist()
 
-    def preprocessar_temas(serie_temas, compostos):
-        termos = []
-        for tema in serie_temas.dropna().astype(str):
-            # Divide cada célula em sub-termos (separados por ;)
-            partes = [t.strip().lower() for t in tema.split(";") if t.strip()]
-            termos.extend(partes)
+    # Vetorizador para unigrams, bigrams e trigrams
+    vectorizer = CountVectorizer(ngram_range=(1,3), token_pattern=r"(?u)\b\w+\b")
+    X = vectorizer.fit_transform(corpus)
 
-        # Junta em texto único
-        texto = " ".join(termos)
+    # Frequências
+    freqs = dict(zip(vectorizer.get_feature_names_out(), X.toarray().sum(axis=0)))
 
-        # Substitui compostos por underline
-        for termo in compostos:
-            texto = texto.replace(termo, termo.replace(" ", "_"))
-        return texto
+    # Filtra apenas os n-grams que aparecem pelo menos 2 vezes
+    freqs_filtrados = {k.replace(" ", "_"): v for k,v in freqs.items() if v > 1}
 
-    texto = preprocessar_temas(df["tema"], termos_compostos)
+    # Gera nuvem
+    wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
 
-    if texto.strip():
-        wc = WordCloud(width=800, height=400, background_color="white").generate(texto)
-        fig, ax = plt.subplots()
-        ax.imshow(wc, interpolation="bilinear")
-        ax.axis("off")
-        st.pyplot(fig)
-    else:
-        st.info("Nenhum tema informado ainda.")
+    fig, ax = plt.subplots()
+    ax.imshow(wc, interpolation="bilinear")
+    ax.axis("off")
+
+    # Substitui "_" por espaço na renderização
+    for (word, freq), fontsize, position, orientation, color in wc.layout_:
+        ax.text(
+            position[0],
+            position[1],
+            word.replace("_", " "),
+            fontsize=fontsize,
+            color=color,
+            rotation=0,
+            ha="center",
+            va="center"
+        )
+
+    st.pyplot(fig)
+
 else:
     st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
+
 
 
 # ===========================
