@@ -100,39 +100,52 @@ if not df.empty and "tema" in df.columns:
     # Junta todos os temas em um corpus
     corpus = df["tema"].dropna().astype(str).str.lower().tolist()
 
-    # Vetorizador para unigramas, bigramas e trigramas
-    vectorizer = CountVectorizer(ngram_range=(1, 3), token_pattern=r"(?u)\\b\\w+\\b")
-    X = vectorizer.fit_transform(corpus)
+    # Vetorizador para unigramas, bigramas e trigramas, sem stopwords
+    vectorizer = CountVectorizer(
+        ngram_range=(1, 3),
+        token_pattern=r"(?u)\b\w+\b",
+        stop_words=None
+    )
 
-    # Frequências
-    freqs = dict(zip(vectorizer.get_feature_names_out(), X.toarray().sum(axis=0)))
+    if corpus:
+        X = vectorizer.fit_transform(corpus)
+        
+        # Frequências
+        freqs = dict(zip(vectorizer.get_feature_names_out(), X.toarray().sum(axis=0)))
 
-    # Mantém apenas termos que aparecem pelo menos 2 vezes
-    freqs_filtrados = {k.replace(" ", "_"): v for k, v in freqs.items() if v > 1}
+        # Stopwords simples em português
+        stopwords_pt = {"de", "da", "do", "em", "a", "o", "e", "para", "com", "no", "na", "os", "as"}
 
-    if freqs_filtrados:
-        wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
+        # Mantém apenas termos que aparecem pelo menos 2 vezes e não são stopwords
+        freqs_filtrados = {
+            k.replace(" ", "_"): v for k, v in freqs.items() if v > 1 and k not in stopwords_pt
+        }
 
-        fig, ax = plt.subplots()
-        ax.imshow(wc, interpolation="bilinear")
-        ax.axis("off")
+        if freqs_filtrados:
+            wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
 
-        # redesenha os textos substituindo '_' por espaço
-        for (word, freq), fontsize, position, orientation, color in wc.layout_:
-            ax.text(
-                position[0],
-                position[1],
-                word.replace("_", " "),
-                fontsize=fontsize,
-                color=color,
-                rotation=0,
-                ha="center",
-                va="center"
-            )
+            fig, ax = plt.subplots()
+            ax.imshow(wc, interpolation="bilinear")
+            ax.axis("off")
 
-        st.pyplot(fig)
+            # redesenha os textos substituindo '_' por espaço
+            for (word, freq), fontsize, position, orientation, color in wc.layout_:
+                ax.text(
+                    position[0],
+                    position[1],
+                    word.replace("_", " "),
+                    fontsize=fontsize,
+                    color=color,
+                    rotation=0,
+                    ha="center",
+                    va="center"
+                )
+
+            st.pyplot(fig)
+        else:
+            st.info("Nenhum tema frequente encontrado.")
     else:
-        st.info("Nenhum tema frequente encontrado.")
+        st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
 else:
     st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
 
