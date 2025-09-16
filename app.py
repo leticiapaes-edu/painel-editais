@@ -5,8 +5,6 @@ from wordcloud import WordCloud
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-from sklearn.feature_extraction.text import CountVectorizer
-import re
 
 # Configuração inicial
 st.set_page_config(
@@ -96,70 +94,15 @@ else:
 st.subheader("📊 Temas mais frequentes")
 
 if not df.empty and "tema" in df.columns:
-
-    # Junta todos os temas em um corpus
-    corpus = (
-        df["tema"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .replace({"nan": "", "none": ""})
-        .str.replace(";", " ", regex=False)  # 🔑 trata separadores
-        .tolist()
-    )
-
-    # Limpeza: remove caracteres estranhos, mas mantém letras/acentos/espaços
-    corpus = [re.sub(r"[^a-záéíóúãõâêôç\s]", " ", t) for t in corpus]
-    corpus = [t for t in corpus if t.strip()]
-
-    vectorizer = CountVectorizer(
-        ngram_range=(1, 3),
-        token_pattern=r"(?u)\b\w+\b",
-        stop_words=None
-    )
-
-    if corpus:
-        try:
-            X = vectorizer.fit_transform(corpus)
-
-            # Frequências
-            freqs = dict(zip(vectorizer.get_feature_names_out(), X.toarray().sum(axis=0)))
-
-            # Stopwords simples em português
-            stopwords_pt = {"de", "da", "do", "em", "a", "o", "e", "para", "com", "no", "na", "os", "as"}
-
-            # Mantém apenas termos que aparecem pelo menos 2 vezes e não são stopwords
-            freqs_filtrados = {
-                k.replace(" ", "_"): v for k, v in freqs.items() if v > 1 and k not in stopwords_pt
-            }
-
-            if freqs_filtrados:
-                wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
-
-                fig, ax = plt.subplots()
-                ax.imshow(wc, interpolation="bilinear")
-                ax.axis("off")
-
-                for (word, freq), fontsize, position, orientation, color in wc.layout_:
-                    ax.text(
-                        position[0],
-                        position[1],
-                        word.replace("_", " "),
-                        fontsize=fontsize,
-                        color=color,
-                        rotation=0,
-                        ha="center",
-                        va="center"
-                    )
-
-                st.pyplot(fig)
-            else:
-                st.info("Nenhum tema frequente encontrado.")
-        except ValueError:
-            st.info("Não foi possível gerar a nuvem de palavras (vocabulário vazio).")
+    texto = " ".join(df["tema"].dropna().astype(str))
+    if texto.strip():
+        wc = WordCloud(width=800, height=400, background_color="white").generate(texto)
+        fig, ax = plt.subplots()
+        ax.imshow(wc, interpolation="bilinear")
+        ax.axis("off")
+        st.pyplot(fig)
     else:
-        st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
+        st.info("Nenhum tema informado ainda.")
 else:
     st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
 
