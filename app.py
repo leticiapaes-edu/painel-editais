@@ -97,9 +97,6 @@ st.subheader("📊 Temas mais frequentes")
 
 if not df.empty and "tema" in df.columns:
 
-    # Debug: mostrar dados brutos
-    st.write("🔎 Amostra de temas brutos:", df["tema"].head(20).tolist())
-
     # Junta todos os temas em um corpus
     corpus = (
         df["tema"]
@@ -108,27 +105,13 @@ if not df.empty and "tema" in df.columns:
         .str.strip()
         .str.lower()
         .replace({"nan": "", "none": ""})
+        .str.replace(";", " ", regex=False)  # 🔑 trata separadores
         .tolist()
     )
 
-    # Limpeza: remove caracteres estranhos e trata delimitadores
-corpus = (
-    df["tema"]
-    .dropna()
-    .astype(str)
-    .str.strip()
-    .str.lower()
-    .replace({"nan": "", "none": ""})
-    .str.replace(";", " ", regex=False)  # 🔑 transforma ; em espaço
-    .tolist()
-)
-
-# Remove caracteres indesejados, mas mantém letras/acentos/espaços
-corpus = [re.sub(r"[^a-záéíóúãõâêôç\s]", " ", t) for t in corpus]
-corpus = [t for t in corpus if t.strip()]  # remove vazios
-
-st.write("🔍 Corpus limpo:", corpus[:30])  # debug
-
+    # Limpeza: remove caracteres estranhos, mas mantém letras/acentos/espaços
+    corpus = [re.sub(r"[^a-záéíóúãõâêôç\s]", " ", t) for t in corpus]
+    corpus = [t for t in corpus if t.strip()]
 
     vectorizer = CountVectorizer(
         ngram_range=(1, 3),
@@ -205,3 +188,4 @@ if st.sidebar.button("Enviar"):
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
         st.sidebar.error(f"Erro ao salvar feedback: {e}")
+
