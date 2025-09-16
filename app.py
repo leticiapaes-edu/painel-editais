@@ -5,8 +5,8 @@ from wordcloud import WordCloud
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
+import re
 
 # Configuração inicial
 st.set_page_config(
@@ -97,10 +97,27 @@ st.subheader("📊 Temas mais frequentes")
 
 if not df.empty and "tema" in df.columns:
 
-    # Junta todos os temas em um corpus
-    corpus = df["tema"].dropna().astype(str).str.lower().tolist()
+    # Debug: mostrar dados brutos
+    st.write("🔎 Amostra de temas brutos:", df["tema"].head(20).tolist())
 
-    # Vetorizador para unigramas, bigramas e trigramas, sem stopwords
+    # Junta todos os temas em um corpus
+    corpus = (
+        df["tema"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .replace({"nan": "", "none": ""})
+        .tolist()
+    )
+
+    # Limpeza: remove caracteres estranhos (mantém só letras, acentos e espaço)
+    corpus = [re.sub(r"[^a-záéíóúãõâêôç\s]", " ", t) for t in corpus]
+    corpus = [t for t in corpus if t.strip()]
+
+    # Debug: mostrar corpus limpo
+    st.write("🔍 Corpus limpo:", corpus[:30])
+
     vectorizer = CountVectorizer(
         ngram_range=(1, 3),
         token_pattern=r"(?u)\b\w+\b",
@@ -108,42 +125,44 @@ if not df.empty and "tema" in df.columns:
     )
 
     if corpus:
-        X = vectorizer.fit_transform(corpus)
-        
-        # Frequências
-        freqs = dict(zip(vectorizer.get_feature_names_out(), X.toarray().sum(axis=0)))
+        try:
+            X = vectorizer.fit_transform(corpus)
 
-        # Stopwords simples em português
-        stopwords_pt = {"de", "da", "do", "em", "a", "o", "e", "para", "com", "no", "na", "os", "as"}
+            # Frequências
+            freqs = dict(zip(vectorizer.get_feature_names_out(), X.toarray().sum(axis=0)))
 
-        # Mantém apenas termos que aparecem pelo menos 2 vezes e não são stopwords
-        freqs_filtrados = {
-            k.replace(" ", "_"): v for k, v in freqs.items() if v > 1 and k not in stopwords_pt
-        }
+            # Stopwords simples em português
+            stopwords_pt = {"de", "da", "do", "em", "a", "o", "e", "para", "com", "no", "na", "os", "as"}
 
-        if freqs_filtrados:
-            wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
+            # Mantém apenas termos que aparecem pelo menos 2 vezes e não são stopwords
+            freqs_filtrados = {
+                k.replace(" ", "_"): v for k, v in freqs.items() if v > 1 and k not in stopwords_pt
+            }
 
-            fig, ax = plt.subplots()
-            ax.imshow(wc, interpolation="bilinear")
-            ax.axis("off")
+            if freqs_filtrados:
+                wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freqs_filtrados)
 
-            # redesenha os textos substituindo '_' por espaço
-            for (word, freq), fontsize, position, orientation, color in wc.layout_:
-                ax.text(
-                    position[0],
-                    position[1],
-                    word.replace("_", " "),
-                    fontsize=fontsize,
-                    color=color,
-                    rotation=0,
-                    ha="center",
-                    va="center"
-                )
+                fig, ax = plt.subplots()
+                ax.imshow(wc, interpolation="bilinear")
+                ax.axis("off")
 
-            st.pyplot(fig)
-        else:
-            st.info("Nenhum tema frequente encontrado.")
+                for (word, freq), fontsize, position, orientation, color in wc.layout_:
+                    ax.text(
+                        position[0],
+                        position[1],
+                        word.replace("_", " "),
+                        fontsize=fontsize,
+                        color=color,
+                        rotation=0,
+                        ha="center",
+                        va="center"
+                    )
+
+                st.pyplot(fig)
+            else:
+                st.info("Nenhum tema frequente encontrado.")
+        except ValueError:
+            st.info("Não foi possível gerar a nuvem de palavras (vocabulário vazio).")
     else:
         st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
 else:
@@ -174,4 +193,3 @@ if st.sidebar.button("Enviar"):
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
         st.sidebar.error(f"Erro ao salvar feedback: {e}")
-
