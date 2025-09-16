@@ -111,12 +111,24 @@ if not df.empty and "tema" in df.columns:
         .tolist()
     )
 
-    # Limpeza: remove caracteres estranhos (mantém só letras, acentos e espaço)
-    corpus = [re.sub(r"[^a-záéíóúãõâêôç\s]", " ", t) for t in corpus]
-    corpus = [t for t in corpus if t.strip()]
+    # Limpeza: remove caracteres estranhos e trata delimitadores
+corpus = (
+    df["tema"]
+    .dropna()
+    .astype(str)
+    .str.strip()
+    .str.lower()
+    .replace({"nan": "", "none": ""})
+    .str.replace(";", " ", regex=False)  # 🔑 transforma ; em espaço
+    .tolist()
+)
 
-    # Debug: mostrar corpus limpo
-    st.write("🔍 Corpus limpo:", corpus[:30])
+# Remove caracteres indesejados, mas mantém letras/acentos/espaços
+corpus = [re.sub(r"[^a-záéíóúãõâêôç\s]", " ", t) for t in corpus]
+corpus = [t for t in corpus if t.strip()]  # remove vazios
+
+st.write("🔍 Corpus limpo:", corpus[:30])  # debug
+
 
     vectorizer = CountVectorizer(
         ngram_range=(1, 3),
