@@ -37,7 +37,7 @@ if not df.empty:
 
     prazo_sel = st.sidebar.selectbox(
         "Prazo de inscrição",
-        ["Todos", "Até 7 dias", "Mais de 7 dias"]
+        ["Todos", "Até 7 dias", "Mais de 7 dias", "Encerrados"]  # <-- nova opção
     )
 
     # Filtrar dados
@@ -48,14 +48,16 @@ if not df.empty:
     if prazo_sel != "Todos":
         hoje = pd.Timestamp('today').normalize()  # só a data
         df_filtrado["data_fim"] = pd.to_datetime(df_filtrado["data_fim"], errors="coerce", dayfirst=True)
-    
+
         mask = df_filtrado["data_fim"].notna()
         delta = (df_filtrado["data_fim"] - hoje).dt.days
-    
+
         if prazo_sel == "Até 7 dias":
-            df_filtrado = df_filtrado[mask & (delta <= 7)]
+            df_filtrado = df_filtrado[mask & (delta >= 0) & (delta <= 7)]
         elif prazo_sel == "Mais de 7 dias":
             df_filtrado = df_filtrado[mask & (delta > 7)]
+        elif prazo_sel == "Encerrados":
+            df_filtrado = df_filtrado[mask & (delta < 0)]
 
 else:
     df_filtrado = pd.DataFrame()
@@ -131,4 +133,3 @@ if st.sidebar.button("Enviar"):
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
         st.sidebar.error(f"Erro ao salvar feedback: {e}")
-
