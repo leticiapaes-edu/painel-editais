@@ -68,8 +68,9 @@ else:
 with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
-    - Apenas editais com inscrições abertas são exibidos (encerrados não aparecem).
-    - Em caso de erro ou dúvidas, utilize a caixinha no menu lateral.
+    - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
+    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, mas seu conteúdo pode abarcar mais questões. Sugere-se a análise do documento na íntegra, em caso de dúvidas quanto sua conveniência.
+    - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
     """)
 
 # ===========================
