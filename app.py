@@ -69,7 +69,7 @@ with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
     - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
-    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, mas seu conteúdo pode abarcar mais questões. Sugere-se a análise do documento na íntegra, em caso de dúvidas quanto sua conveniência.
+    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, mas seu conteúdo pode abarcar mais questões. Exemplo: editais de bolsas de formação costumam abranger todas as áreas do conhecimento. 
     - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
     """)
 
