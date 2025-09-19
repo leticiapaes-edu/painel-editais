@@ -31,41 +31,70 @@ def carregar_dados():
 df = carregar_dados()
 
 # ===========================
-# Filtros
+# Pré-processamento
+# ===========================
+if not df.empty:
+    # Garantir que datas estão no formato datetime
+    df["data_fim"] = pd.to_datetime(df["data_fim"], errors="coerce", dayfirst=True)
+    df["data_inicio"] = pd.to_datetime(df["data_inicio"], errors="coerce", dayfirst=True)
+
+    # Tratar colunas com múltiplos valores
+    if "modalidade" in df.columns:
+        df["modalidade"] = df["modalidade"].fillna("").astype(str)
+        df["modalidade_lista"] = df["modalidade"].str.split(";")
+    else:
+        df["modalidade_lista"] = [[]]
+
+    if "tema" in df.columns:
+        df["tema"] = df["tema"].fillna("").astype(str)
+        df["tema_lista"] = df["tema"].str.split(";")
+    else:
+        df["tema_lista"] = [[]]
+
+# ===========================
+# Filtros no sidebar
 # ===========================
 if not df.empty:
     agencias = df["agencia"].dropna().unique().tolist()
     agencia_sel = st.sidebar.selectbox("Agência de fomento", ["Todos"] + agencias)
 
-    # Filtro por modalidade (multiselect)
-    modalidades = df["modalidade"].dropna().unique().tolist() if "modalidade" in df.columns else []
-    modalidade_sel = st.sidebar.multiselect("Modalidade", modalidades)
+    modalidades = sorted(set(sum(df["modalidade_lista"], [])))
+    temas = sorted(set(sum(df["tema_lista"], [])))
 
-    # Filtro por tema (multiselect)
-    temas = df["tema"].dropna().unique().tolist() if "tema" in df.columns else []
+    modalidade_sel = st.sidebar.multiselect("Modalidade", modalidades)
     tema_sel = st.sidebar.multiselect("Tema", temas)
+
+    # Filtro por ano
+    anos = sorted(df["data_fim"].dropna().dt.year.unique())
+    ano_sel = st.sidebar.multiselect("Ano de encerramento", anos)
 
     prazo_sel = st.sidebar.selectbox(
         "Prazo de inscrição",
         ["Todos", "Até 7 dias", "Mais de 7 dias", "Encerrados"]
     )
 
+    # Página (abertos/encerrados)
+    pagina = st.sidebar.radio("📌 Escolha a página", ["Abertos", "Encerrados"])
+
+    # ===========================
     # Filtrar dados
+    # ===========================
     df_filtrado = df.copy()
 
     if agencia_sel != "Todos":
         df_filtrado = df_filtrado[df_filtrado["agencia"] == agencia_sel]
 
     if modalidade_sel:
-        df_filtrado = df_filtrado[df_filtrado["modalidade"].isin(modalidade_sel)]
+        df_filtrado = df_filtrado[df_filtrado["modalidade_lista"].apply(lambda x: any(m in x for m in modalidade_sel))]
 
     if tema_sel:
-        df_filtrado = df_filtrado[df_filtrado["tema"].isin(tema_sel)]
+        df_filtrado = df_filtrado[df_filtrado["tema_lista"].apply(lambda x: any(t in x for t in tema_sel))]
+
+    if ano_sel:
+        df_filtrado = df_filtrado[df_filtrado["data_fim"].dt.year.isin(ano_sel)]
 
     if prazo_sel != "Todos":
         hoje = pd.Timestamp('today').normalize()
-        df_filtrado["data_fim"] = pd.to_datetime(df_filtrado["data_fim"], errors="coerce", dayfirst=True)
-
         mask = df_filtrado["data_fim"].notna()
         delta = (df_filtrado["data_fim"] - hoje).dt.days
 
@@ -79,52 +108,74 @@ else:
     df_filtrado = pd.DataFrame()
 
 # ===========================
+# Nuvem de palavras (decorativa)
+# ===========================
+if not df.empty and "tema" in df.columns:
+    texto = " ".join(df["tema"].dropna().astype(str))
+    if texto.strip():
+        wc = WordCloud(width=800, height=300, background_color="white").generate(texto)
+        fig, ax = plt.subplots()
+        ax.imshow(wc, interpolation="bilinear")
+        ax.axis("off")
+        st.pyplot(fig)
+
+# ===========================
+# Gráficos de distribuição
+# ===========================
+st.subheader("📊 Distribuições por Agência")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if "modalidade" in df.columns:
+        dist_modalidade = df.groupby("agencia")["modalidade"].value_counts(normalize=True).unstack(fill_value=0)
+        st.bar_chart(dist_modalidade.T)
+
+with col2:
+    if "tema" in df.columns:
+        dist_tema = df.groupby("agencia")["tema"].value_counts(normalize=True).unstack(fill_value=0)
+        st.bar_chart(dist_tema.T)
+
+# ===========================
 # Orientações
 # ===========================
 with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
+    - Alguns editais possuem várias chamadas e, nesses casos, são registradas as primeiras datas de submissão.
     - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
-    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, mas seu conteúdo pode abarcar mais questões. Exemplo: editais de bolsas de formação costumam abranger todas as áreas do conhecimento. 
+    - Não há uma filtragem quanto à conveniência, portanto, todos os editais publicados foram registrados neste banco de dados.
+    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, de forma objetiva, mas seu conteúdo pode abarcar mais questões. 
     - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
     """)
 
 # ===========================
-# Exibir editais
+# Exibição por página
 # ===========================
-st.subheader("📢 Editais de Fomento Abertos")
-
-if not df_filtrado.empty:
-    for _, row in df_filtrado.iterrows():
-        with st.container():
-            st.markdown(f"**{row['titulo']}**")
-            st.write(f"📌 Agência: {row['agencia']}")
-            st.write(f"🎓 Modalidade: {row.get('modalidade', '')}")
-            st.write(f"🗓️ Início: {row['data_inicio']} | Fim: {row['data_fim']}")
-            st.write(f"🏷️ Tema: {row.get('tema', '')}")
-            if pd.notna(row.get('link', '')):
-                st.markdown(f"[🔗 Acesse o edital]({row['link']})")
-            st.markdown("---")
-else:
-    st.warning("Nenhum edital disponível no momento.")
-
-# ===========================
-# Nuvem de palavras
-# ===========================
-st.subheader("📊 Temas mais frequentes")
-
-if not df.empty and "tema" in df.columns:
-    texto = " ".join(df["tema"].dropna().astype(str))
-    if texto.strip():
-        wc = WordCloud(width=800, height=400, background_color="white").generate(texto)
-        fig, ax = plt.subplots()
-        ax.imshow(wc, interpolation="bilinear")
-        ax.axis("off")
-        st.pyplot(fig)
+if pagina == "Abertos":
+    st.subheader("📢 Editais de Fomento Abertos")
+    df_abertos = df_filtrado[df_filtrado["data_fim"] >= pd.Timestamp.today()]
+    if not df_abertos.empty:
+        for _, row in df_abertos.iterrows():
+            with st.container():
+                st.markdown(f"**{row['titulo']}**")
+                st.write(f"📌 Agência: {row['agencia']}")
+                st.write(f"🎓 Modalidade: {row.get('modalidade', '')}")
+                st.write(f"🗓️ Início: {row['data_inicio'].date()} | Fim: {row['data_fim'].date() if pd.notna(row['data_fim']) else ''}")
+                st.write(f"🏷️ Tema: {row.get('tema', '')}")
+                if pd.notna(row.get('link', '')):
+                    st.markdown(f"[🔗 Acesse o edital]({row['link']})")
+                st.markdown("---")
     else:
-        st.info("Nenhum tema informado ainda.")
-else:
-    st.info("Nenhum tema disponível para gerar a nuvem de palavras.")
+        st.warning("Nenhum edital aberto disponível no momento.")
+
+elif pagina == "Encerrados":
+    st.subheader("📚 Editais Encerrados")
+    df_encerrados = df[df["data_fim"] < pd.Timestamp.today()]
+    if not df_encerrados.empty:
+        st.dataframe(df_encerrados)
+    else:
+        st.info("Nenhum edital encerrado disponível.")
 
 # ===========================
 # Feedback no Google Sheets
@@ -151,3 +202,4 @@ if st.sidebar.button("Enviar"):
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
         st.sidebar.error(f"Erro ao salvar feedback: {e}")
+
