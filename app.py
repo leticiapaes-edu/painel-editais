@@ -51,6 +51,12 @@ if not df.empty:
     else:
         df["tema_lista"] = [[]]
 
+    if "tipo_financiamento" in df.columns:
+        df["tipo_financiamento"] = df["tipo_financiamento"].fillna("").astype(str)
+        df["tipo_financiamento_lista"] = df["tipo_financiamento"].str.split(";")
+    else:
+        df["tipo_financiamento_lista"] = [[]]
+
 # ===========================
 # Filtros no sidebar
 # ===========================
@@ -126,15 +132,39 @@ st.subheader("📊 Distribuições por Agência")
 
 col1, col2 = st.columns(2)
 
+# Distribuição por tipo de financiamento
 with col1:
-    if "modalidade" in df.columns:
-        dist_modalidade = df.groupby("agencia")["modalidade"].value_counts(normalize=True).unstack(fill_value=0)
-        st.bar_chart(dist_modalidade.T)
+    if "tipo_financiamento_lista" in df.columns:
+        dist_financiamento = {}
+        for _, row in df.iterrows():
+            for tf in row["tipo_financiamento_lista"]:
+                tf = tf.strip()
+                if tf:
+                    dist_financiamento[(row["agencia"], tf)] = dist_financiamento.get((row["agencia"], tf), 0) + 1
+        if dist_financiamento:
+            df_fin = pd.DataFrame([
+                {"agencia": ag, "tipo_financiamento": tf, "contagem": count}
+                for (ag, tf), count in dist_financiamento.items()
+            ])
+            tabela = df_fin.pivot_table(index="tipo_financiamento", columns="agencia", values="contagem", fill_value=0)
+            st.bar_chart(tabela)
 
+# Distribuição por modalidade
 with col2:
-    if "tema" in df.columns:
-        dist_tema = df.groupby("agencia")["tema"].value_counts(normalize=True).unstack(fill_value=0)
-        st.bar_chart(dist_tema.T)
+    if "modalidade_lista" in df.columns:
+        dist_modalidade = {}
+        for _, row in df.iterrows():
+            for mod in row["modalidade_lista"]:
+                mod = mod.strip()
+                if mod:
+                    dist_modalidade[(row["agencia"], mod)] = dist_modalidade.get((row["agencia"], mod), 0) + 1
+        if dist_modalidade:
+            df_mod = pd.DataFrame([
+                {"agencia": ag, "modalidade": mod, "contagem": count}
+                for (ag, mod), count in dist_modalidade.items()
+            ])
+            tabela = df_mod.pivot_table(index="modalidade", columns="agencia", values="contagem", fill_value=0)
+            st.bar_chart(tabela)
 
 # ===========================
 # Orientações
@@ -142,10 +172,8 @@ with col2:
 with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
-    - Alguns editais possuem várias chamadas e, nesses casos, são registradas as primeiras datas de submissão.
     - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
-    - Não há uma filtragem quanto à conveniência, portanto, todos os editais publicados foram registrados neste banco de dados.
-    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, de forma objetiva, mas seu conteúdo pode abarcar mais questões. 
+    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, mas seu conteúdo pode abarcar mais questões. Exemplo: editais de bolsas de formação costumam abranger todas as áreas do conhecimento. 
     - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
     """)
 
