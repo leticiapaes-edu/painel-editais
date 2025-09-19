@@ -43,19 +43,19 @@ if not df.empty:
         df["modalidade"] = df["modalidade"].fillna("").astype(str)
         df["modalidade_lista"] = df["modalidade"].str.split(";")
     else:
-        df["modalidade_lista"] = [[]]
+        df["modalidade_lista"] = [[] for _ in range(len(df))]
 
     if "tema" in df.columns:
         df["tema"] = df["tema"].fillna("").astype(str)
         df["tema_lista"] = df["tema"].str.split(";")
     else:
-        df["tema_lista"] = [[]]
+        df["tema_lista"] = [[] for _ in range(len(df))]
 
     if "tipo_financiamento" in df.columns:
         df["tipo_financiamento"] = df["tipo_financiamento"].fillna("").astype(str)
         df["tipo_financiamento_lista"] = df["tipo_financiamento"].str.split(";")
     else:
-        df["tipo_financiamento_lista"] = [[]]
+        df["tipo_financiamento_lista"] = [[] for _ in range(len(df))]
 
 # ===========================
 # Filtros no sidebar
@@ -146,8 +146,12 @@ with col1:
                 {"agencia": ag, "tipo_financiamento": tf, "contagem": count}
                 for (ag, tf), count in dist_financiamento.items()
             ])
-            tabela = df_fin.pivot_table(index="tipo_financiamento", columns="agencia", values="contagem", fill_value=0)
-            st.bar_chart(tabela)
+            for ag in df_fin["agencia"].unique():
+                dados = df_fin[df_fin["agencia"] == ag]
+                fig, ax = plt.subplots()
+                ax.pie(dados["contagem"], labels=dados["tipo_financiamento"], autopct="%1.1f%%")
+                ax.set_title(f"{ag} - Tipo de Financiamento")
+                st.pyplot(fig)
 
 # Distribuição por modalidade
 with col2:
@@ -163,8 +167,12 @@ with col2:
                 {"agencia": ag, "modalidade": mod, "contagem": count}
                 for (ag, mod), count in dist_modalidade.items()
             ])
-            tabela = df_mod.pivot_table(index="modalidade", columns="agencia", values="contagem", fill_value=0)
-            st.bar_chart(tabela)
+            for ag in df_mod["agencia"].unique():
+                dados = df_mod[df_mod["agencia"] == ag]
+                fig, ax = plt.subplots()
+                ax.pie(dados["contagem"], labels=dados["modalidade"], autopct="%1.1f%%")
+                ax.set_title(f"{ag} - Modalidade")
+                st.pyplot(fig)
 
 # ===========================
 # Orientações
@@ -230,4 +238,3 @@ if st.sidebar.button("Enviar"):
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
         st.sidebar.error(f"Erro ao salvar feedback: {e}")
-
