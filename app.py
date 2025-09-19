@@ -114,10 +114,12 @@ else:
     df_filtrado = pd.DataFrame()
 
 # ===========================
-# Nuvem de palavras (decorativa, menor)
+# Nuvem de palavras (decorativa, menor e sem duplicados)
 # ===========================
-if not df.empty and "tema" in df.columns:
-    texto = " ".join(df["tema"].dropna().astype(str))
+if not df.empty and "tema_lista" in df.columns:
+    termos = sum(df["tema_lista"].tolist(), [])
+    termos_unicos = list(set([t.strip() for t in termos if t.strip()]))
+    texto = " ".join(termos_unicos)
     if texto.strip():
         wc = WordCloud(width=600, height=200, background_color="white").generate(texto)
         fig, ax = plt.subplots(figsize=(8, 3))
@@ -126,7 +128,7 @@ if not df.empty and "tema" in df.columns:
         st.pyplot(fig)
 
 # ===========================
-# Gráficos de distribuição por agência
+# Gráficos de distribuição por agência (% stacked, agência no eixo Y)
 # ===========================
 st.subheader("📊 Distribuições por Agência")
 
@@ -141,11 +143,12 @@ for _, row in df.iterrows():
 if tipos_expandidos:
     df_tipos = pd.DataFrame(tipos_expandidos)
     tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
-    fig, ax = plt.subplots(figsize=(8, 4))
-    tabela_tipos.plot(kind="bar", stacked=False, ax=ax)
-    ax.set_title("Distribuição de Tipos de Financiamento por Agência")
-    ax.set_ylabel("Quantidade")
-    ax.set_xlabel("Agência")
+    tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
+    fig, ax = plt.subplots(figsize=(8, 5))
+    tabela_tipos_pct.plot(kind="barh", stacked=True, ax=ax)
+    ax.set_title("Distribuição Percentual de Tipos de Financiamento por Agência")
+    ax.set_xlabel("% do total na agência")
+    ax.set_ylabel("Agência")
     st.pyplot(fig)
 
 # Modalidade por agência
@@ -159,11 +162,12 @@ for _, row in df.iterrows():
 if modalidades_expandidas:
     df_mods = pd.DataFrame(modalidades_expandidas)
     tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
-    fig, ax = plt.subplots(figsize=(8, 4))
-    tabela_mods.plot(kind="bar", stacked=False, ax=ax)
-    ax.set_title("Distribuição de Modalidades por Agência")
-    ax.set_ylabel("Quantidade")
-    ax.set_xlabel("Agência")
+    tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
+    fig, ax = plt.subplots(figsize=(8, 5))
+    tabela_mods_pct.plot(kind="barh", stacked=True, ax=ax)
+    ax.set_title("Distribuição Percentual de Modalidades por Agência")
+    ax.set_xlabel("% do total na agência")
+    ax.set_ylabel("Agência")
     st.pyplot(fig)
 
 # ===========================
