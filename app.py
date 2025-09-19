@@ -126,37 +126,39 @@ if not df.empty and "tema" in df.columns:
         st.pyplot(fig)
 
 # ===========================
-# Gráficos de distribuição
+# Gráficos de distribuição por agência
 # ===========================
-st.subheader("📊 Distribuições Consolidadas")
+st.subheader("📊 Distribuições por Agência")
 
 col1, col2 = st.columns(2)
 
-# Distribuição por tipo de financiamento
+# Tipo de financiamento por agência
 with col1:
-    if "tipo_financiamento_lista" in df.columns:
-        tipos = []
-        for lista in df["tipo_financiamento_lista"]:
-            tipos.extend([t.strip() for t in lista if t.strip()])
-        if tipos:
-            df_tipos = pd.Series(tipos).value_counts()
-            fig, ax = plt.subplots()
-            df_tipos.sort_values().plot(kind="barh", ax=ax, color="skyblue")
-            ax.set_title("Distribuição de Tipos de Financiamento")
-            st.pyplot(fig)
+    tipos_expandidos = []
+    for _, row in df.iterrows():
+        for tf in row["tipo_financiamento_lista"]:
+            tf = tf.strip()
+            if tf:
+                tipos_expandidos.append({"agencia": row["agencia"], "tipo_financiamento": tf})
 
-# Distribuição por modalidade
+    if tipos_expandidos:
+        df_tipos = pd.DataFrame(tipos_expandidos)
+        tabela_tipos = df_tipos.pivot_table(index="tipo_financiamento", columns="agencia", aggfunc=len, fill_value=0)
+        st.bar_chart(tabela_tipos)
+
+# Modalidade por agência
 with col2:
-    if "modalidade_lista" in df.columns:
-        mods = []
-        for lista in df["modalidade_lista"]:
-            mods.extend([m.strip() for m in lista if m.strip()])
-        if mods:
-            df_mods = pd.Series(mods).value_counts()
-            fig, ax = plt.subplots()
-            df_mods.sort_values().plot(kind="barh", ax=ax, color="lightgreen")
-            ax.set_title("Distribuição de Modalidades")
-            st.pyplot(fig)
+    modalidades_expandidas = []
+    for _, row in df.iterrows():
+        for mod in row["modalidade_lista"]:
+            mod = mod.strip()
+            if mod:
+                modalidades_expandidas.append({"agencia": row["agencia"], "modalidade": mod})
+
+    if modalidades_expandidas:
+        df_mods = pd.DataFrame(modalidades_expandidas)
+        tabela_mods = df_mods.pivot_table(index="modalidade", columns="agencia", aggfunc=len, fill_value=0)
+        st.bar_chart(tabela_mods)
 
 # ===========================
 # Orientações
