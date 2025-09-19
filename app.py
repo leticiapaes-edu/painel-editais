@@ -114,13 +114,13 @@ else:
     df_filtrado = pd.DataFrame()
 
 # ===========================
-# Nuvem de palavras (decorativa)
+# Nuvem de palavras (decorativa, menor)
 # ===========================
 if not df.empty and "tema" in df.columns:
     texto = " ".join(df["tema"].dropna().astype(str))
     if texto.strip():
-        wc = WordCloud(width=800, height=300, background_color="white").generate(texto)
-        fig, ax = plt.subplots()
+        wc = WordCloud(width=600, height=200, background_color="white").generate(texto)
+        fig, ax = plt.subplots(figsize=(8, 3))
         ax.imshow(wc, interpolation="bilinear")
         ax.axis("off")
         st.pyplot(fig)
@@ -130,35 +130,41 @@ if not df.empty and "tema" in df.columns:
 # ===========================
 st.subheader("📊 Distribuições por Agência")
 
-col1, col2 = st.columns(2)
-
 # Tipo de financiamento por agência
-with col1:
-    tipos_expandidos = []
-    for _, row in df.iterrows():
-        for tf in row["tipo_financiamento_lista"]:
-            tf = tf.strip()
-            if tf:
-                tipos_expandidos.append({"agencia": row["agencia"], "tipo_financiamento": tf})
+tipos_expandidos = []
+for _, row in df.iterrows():
+    for tf in row["tipo_financiamento_lista"]:
+        tf = tf.strip()
+        if tf:
+            tipos_expandidos.append({"agencia": row["agencia"], "tipo_financiamento": tf})
 
-    if tipos_expandidos:
-        df_tipos = pd.DataFrame(tipos_expandidos)
-        tabela_tipos = df_tipos.pivot_table(index="tipo_financiamento", columns="agencia", aggfunc=len, fill_value=0)
-        st.bar_chart(tabela_tipos)
+if tipos_expandidos:
+    df_tipos = pd.DataFrame(tipos_expandidos)
+    tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
+    fig, ax = plt.subplots(figsize=(8, 4))
+    tabela_tipos.plot(kind="bar", stacked=False, ax=ax)
+    ax.set_title("Distribuição de Tipos de Financiamento por Agência")
+    ax.set_ylabel("Quantidade")
+    ax.set_xlabel("Agência")
+    st.pyplot(fig)
 
 # Modalidade por agência
-with col2:
-    modalidades_expandidas = []
-    for _, row in df.iterrows():
-        for mod in row["modalidade_lista"]:
-            mod = mod.strip()
-            if mod:
-                modalidades_expandidas.append({"agencia": row["agencia"], "modalidade": mod})
+modalidades_expandidas = []
+for _, row in df.iterrows():
+    for mod in row["modalidade_lista"]:
+        mod = mod.strip()
+        if mod:
+            modalidades_expandidas.append({"agencia": row["agencia"], "modalidade": mod})
 
-    if modalidades_expandidas:
-        df_mods = pd.DataFrame(modalidades_expandidas)
-        tabela_mods = df_mods.pivot_table(index="modalidade", columns="agencia", aggfunc=len, fill_value=0)
-        st.bar_chart(tabela_mods)
+if modalidades_expandidas:
+    df_mods = pd.DataFrame(modalidades_expandidas)
+    tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
+    fig, ax = plt.subplots(figsize=(8, 4))
+    tabela_mods.plot(kind="bar", stacked=False, ax=ax)
+    ax.set_title("Distribuição de Modalidades por Agência")
+    ax.set_ylabel("Quantidade")
+    ax.set_xlabel("Agência")
+    st.pyplot(fig)
 
 # ===========================
 # Orientações
