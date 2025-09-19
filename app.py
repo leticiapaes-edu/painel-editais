@@ -128,51 +128,35 @@ if not df.empty and "tema" in df.columns:
 # ===========================
 # Gráficos de distribuição
 # ===========================
-st.subheader("📊 Distribuições por Agência")
+st.subheader("📊 Distribuições Consolidadas")
 
 col1, col2 = st.columns(2)
 
 # Distribuição por tipo de financiamento
 with col1:
     if "tipo_financiamento_lista" in df.columns:
-        dist_financiamento = {}
-        for _, row in df.iterrows():
-            for tf in row["tipo_financiamento_lista"]:
-                tf = tf.strip()
-                if tf:
-                    dist_financiamento[(row["agencia"], tf)] = dist_financiamento.get((row["agencia"], tf), 0) + 1
-        if dist_financiamento:
-            df_fin = pd.DataFrame([
-                {"agencia": ag, "tipo_financiamento": tf, "contagem": count}
-                for (ag, tf), count in dist_financiamento.items()
-            ])
-            for ag in df_fin["agencia"].unique():
-                dados = df_fin[df_fin["agencia"] == ag]
-                fig, ax = plt.subplots()
-                ax.pie(dados["contagem"], labels=dados["tipo_financiamento"], autopct="%1.1f%%")
-                ax.set_title(f"{ag} - Tipo de Financiamento")
-                st.pyplot(fig)
+        tipos = []
+        for lista in df["tipo_financiamento_lista"]:
+            tipos.extend([t.strip() for t in lista if t.strip()])
+        if tipos:
+            df_tipos = pd.Series(tipos).value_counts()
+            fig, ax = plt.subplots()
+            df_tipos.sort_values().plot(kind="barh", ax=ax, color="skyblue")
+            ax.set_title("Distribuição de Tipos de Financiamento")
+            st.pyplot(fig)
 
 # Distribuição por modalidade
 with col2:
     if "modalidade_lista" in df.columns:
-        dist_modalidade = {}
-        for _, row in df.iterrows():
-            for mod in row["modalidade_lista"]:
-                mod = mod.strip()
-                if mod:
-                    dist_modalidade[(row["agencia"], mod)] = dist_modalidade.get((row["agencia"], mod), 0) + 1
-        if dist_modalidade:
-            df_mod = pd.DataFrame([
-                {"agencia": ag, "modalidade": mod, "contagem": count}
-                for (ag, mod), count in dist_modalidade.items()
-            ])
-            for ag in df_mod["agencia"].unique():
-                dados = df_mod[df_mod["agencia"] == ag]
-                fig, ax = plt.subplots()
-                ax.pie(dados["contagem"], labels=dados["modalidade"], autopct="%1.1f%%")
-                ax.set_title(f"{ag} - Modalidade")
-                st.pyplot(fig)
+        mods = []
+        for lista in df["modalidade_lista"]:
+            mods.extend([m.strip() for m in lista if m.strip()])
+        if mods:
+            df_mods = pd.Series(mods).value_counts()
+            fig, ax = plt.subplots()
+            df_mods.sort_values().plot(kind="barh", ax=ax, color="lightgreen")
+            ax.set_title("Distribuição de Modalidades")
+            st.pyplot(fig)
 
 # ===========================
 # Orientações
@@ -197,6 +181,7 @@ if pagina == "Abertos":
                 st.markdown(f"**{row['titulo']}**")
                 st.write(f"📌 Agência: {row['agencia']}")
                 st.write(f"🎓 Modalidade: {row.get('modalidade', '')}")
+                st.write(f"💰 Tipo de financiamento: {row.get('tipo_financiamento', '')}")
                 st.write(f"🗓️ Início: {row['data_inicio'].date()} | Fim: {row['data_fim'].date() if pd.notna(row['data_fim']) else ''}")
                 st.write(f"🏷️ Tema: {row.get('tema', '')}")
                 if pd.notna(row.get('link', '')):
