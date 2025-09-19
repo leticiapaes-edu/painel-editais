@@ -18,12 +18,26 @@ st.set_page_config(
 st.title("📊 Painel de Editais de Fomento à Pesquisa e Extensão")
 
 # ===========================
+# Orientações
+# ===========================
+with st.expander("📌 Orientações", expanded=True):
+    st.markdown("""
+    - A lista é atualizada semanalmente, sempre às segundas.
+    - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
+    - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, mas seu conteúdo pode abarcar mais questões. Exemplo: editais de bolsas de formação costumam abranger todas as áreas do conhecimento. 
+    - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
+    """)
+
+
+
+# ===========================
 # Carregar dados do Google Sheets
 # ===========================
 @st.cache_data
 def carregar_dados():
     url = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4/gviz/tq?tqx=out:csv&sheet=editais_abertos"
     df = pd.read_csv(url)
+    # Remove colunas extras (Unnamed)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     return df
 
@@ -33,9 +47,11 @@ df = carregar_dados()
 # Pré-processamento
 # ===========================
 if not df.empty:
+    # Garantir que datas estão no formato datetime
     df["data_fim"] = pd.to_datetime(df["data_fim"], errors="coerce", dayfirst=True)
     df["data_inicio"] = pd.to_datetime(df["data_inicio"], errors="coerce", dayfirst=True)
 
+    # Tratar colunas com múltiplos valores
     if "modalidade" in df.columns:
         df["modalidade"] = df["modalidade"].fillna("").astype(str)
         df["modalidade_lista"] = df["modalidade"].str.split(";")
@@ -55,129 +71,143 @@ if not df.empty:
         df["tipo_financiamento_lista"] = [[] for _ in range(len(df))]
 
 # ===========================
-# Sidebar – escolha da página
+# Filtros no sidebar
 # ===========================
-pagina = st.sidebar.radio("📌 Escolha a página", ["Início", "Abertos", "Encerrados"])
+if not df.empty:
+    agencias = df["agencia"].dropna().unique().tolist()
+    agencia_sel = st.sidebar.selectbox("Agência de fomento", ["Todos"] + agencias)
+
+    modalidades = sorted(set(sum(df["modalidade_lista"], [])))
+    temas = sorted(set(sum(df["tema_lista"], [])))
+
+    modalidade_sel = st.sidebar.multiselect("Modalidade", modalidades)
+    tema_sel = st.sidebar.multiselect("Tema", temas)
+
+    # Filtro por ano
+    anos = sorted(df["data_fim"].dropna().dt.year.unique())
+    ano_sel = st.sidebar.multiselect("Ano de encerramento", anos)
+
+    prazo_sel = st.sidebar.selectbox(
+        "Prazo de inscrição",
+        ["Todos", "Até 7 dias", "Mais de 7 dias", "Encerrados"]
+    )
+
+    # Página (abertos/encerrados)
+    pagina = st.sidebar.radio("📌 Escolha a página", ["Abertos", "Encerrados"])
+
+    # ===========================
+    # Filtrar dados
+    # ===========================
+    df_filtrado = df.copy()
+
+    if agencia_sel != "Todos":
+        df_filtrado = df_filtrado[df_filtrado["agencia"] == agencia_sel]
+
+    if modalidade_sel:
+        df_filtrado = df_filtrado[df_filtrado["modalidade_lista"].apply(lambda x: any(m in x for m in modalidade_sel))]
+
+    if tema_sel:
+        df_filtrado = df_filtrado[df_filtrado["tema_lista"].apply(lambda x: any(t in x for t in tema_sel))]
+
+    if ano_sel:
+        df_filtrado = df_filtrado[df_filtrado["data_fim"].dt.year.isin(ano_sel)]
+
+    if prazo_sel != "Todos":
+        hoje = pd.Timestamp('today').normalize()
+        mask = df_filtrado["data_fim"].notna()
+        delta = (df_filtrado["data_fim"] - hoje).dt.days
+
+        if prazo_sel == "Até 7 dias":
+            df_filtrado = df_filtrado[mask & (delta >= 0) & (delta <= 7)]
+        elif prazo_sel == "Mais de 7 dias":
+            df_filtrado = df_filtrado[mask & (delta > 7)]
+        elif prazo_sel == "Encerrados":
+            df_filtrado = df_filtrado[mask & (delta < 0)]
+else:
+    df_filtrado = pd.DataFrame()
+
 
 # ===========================
-# Página Inicial (Resumo)
+# Visão geral dos editais
 # ===========================
-if pagina == "Início":
-    st.header("✨ Visão Geral dos Editais")
+if not df.empty:
+    st.subheader("📈 Visão Geral dos Editais")
+    total = len(df)
+    por_agencia = df['agencia'].value_counts()
+    por_ano = df['data_fim'].dt.year.value_counts().sort_index()
 
-    # KPIs
-    total_abertos = df[df["data_fim"] >= pd.Timestamp.today()].shape[0]
-    total_encerrados = df[df["data_fim"] < pd.Timestamp.today()].shape[0]
-    total_geral = df.shape[0]
+    st.write(f"**Total de editais carregados:** {total}")
+    st.write("**Editais por agência:**")
+    st.dataframe(por_agencia)
+    st.write("**Editais por ano de encerramento:**")
+    st.dataframe(por_ano)
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("📢 Abertos", total_abertos)
-    col2.metric("📚 Encerrados", total_encerrados)
-    col3.metric("📊 Total", total_geral)
+# ===========================
+# Nuvem de palavras (Principais temas - proporcional à frequência)
+# ===========================
+from collections import Counter
 
-    # Próximos prazos
-    st.subheader("🗓️ Próximos prazos de encerramento")
-    proximos = df[df["data_fim"] >= pd.Timestamp.today()].sort_values("data_fim").head(5)
-    if not proximos.empty:
-        st.table(proximos[["titulo", "agencia", "data_fim"]])
-    else:
-        st.info("Nenhum prazo próximo disponível.")
-
-    # Linha do tempo dos encerramentos
-    st.subheader("📆 Linha do tempo de encerramentos futuros")
-    df_futuros = df[df["data_fim"] >= pd.Timestamp.today()].copy()
-    if not df_futuros.empty:
-        df_futuros = df_futuros.groupby("data_fim").size().reset_index(name="qtd")
-        fig, ax = plt.subplots(figsize=(8, 3))
-        ax.bar(df_futuros["data_fim"], df_futuros["qtd"], color="skyblue")
-        ax.set_title("Quantidade de editais por data de encerramento")
-        ax.set_xlabel("Data de encerramento")
-        ax.set_ylabel("Nº de editais")
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
-    else:
-        st.info("Nenhum encerramento futuro disponível.")
-
-    # Nuvem de palavras
-    st.subheader("☁️ Principais Temas")
-    termos = sum(df["tema_lista"].tolist(), [])
-    termos_unicos = list(set([t.strip() for t in termos if t.strip()]))
-    texto = " ".join(termos_unicos)
-    if texto.strip():
-        wc = WordCloud(width=600, height=200, background_color="white").generate(texto)
-        fig, ax = plt.subplots(figsize=(8, 2.5))
+if not df.empty and "tema_lista" in df.columns:
+    termos = [t.strip() for lista in df["tema_lista"] for t in lista if t.strip()]
+    if termos:
+        freq = Counter(termos)
+        wc = WordCloud(width=800, height=400, background_color="white").generate_from_frequencies(freq)
+        fig, ax = plt.subplots(figsize=(10, 5))
         ax.imshow(wc, interpolation="bilinear")
         ax.axis("off")
+        st.subheader("☁️ Principais temas")
         st.pyplot(fig)
 
-    # Distribuições
-    st.subheader("📊 Distribuições por Agência")
-
-    # Tipo de financiamento
-    tipos_expandidos = []
-    for _, row in df.iterrows():
-        for tf in row["tipo_financiamento_lista"]:
-            tf = tf.strip()
-            if tf:
-                tipos_expandidos.append({"agencia": row["agencia"], "tipo_financiamento": tf})
-
-    if tipos_expandidos:
-        df_tipos = pd.DataFrame(tipos_expandidos)
-        tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
-        tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
-        fig, ax = plt.subplots(figsize=(7, 3))
-        tabela_tipos_pct.plot(kind="barh", stacked=True, ax=ax)
-        ax.set_title("Distribuição Percentual de Tipos de Financiamento por Agência")
-        ax.set_xlabel("% do total na agência")
-        ax.set_ylabel("Agência")
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
-        st.pyplot(fig)
-
-    # Modalidade
-    modalidades_expandidas = []
-    for _, row in df.iterrows():
-        for mod in row["modalidade_lista"]:
-            mod = mod.strip()
-            if mod:
-                modalidades_expandidas.append({"agencia": row["agencia"], "modalidade": mod})
-
-    if modalidades_expandidas:
-        df_mods = pd.DataFrame(modalidades_expandidas)
-        tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
-        tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
-        fig, ax = plt.subplots(figsize=(7, 3))
-        tabela_mods_pct.plot(kind="barh", stacked=True, ax=ax)
-        ax.set_title("Distribuição Percentual de Modalidades por Agência")
-        ax.set_xlabel("% do total na agência")
-        ax.set_ylabel("Agência")
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
-        st.pyplot(fig)
-
-    # Orientações
-    with st.expander("📌 Orientações", expanded=True):
-        st.markdown("""
-        - A lista é atualizada semanalmente, sempre às segundas.
-        - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
-        - Os temas são listados de forma a introduzir inicialmente o objetivo do edital, mas seu conteúdo pode abarcar mais questões.
-        - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
-        """)
-
-    # Botões de navegação
-    st.subheader("➡️ Acesse os editais")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📢 Ver Abertos"):
-            st.session_state["pagina"] = "Abertos"
-    with col2:
-        if st.button("📚 Ver Encerrados"):
-            st.session_state["pagina"] = "Encerrados"
 
 # ===========================
-# Página Abertos
+# Gráficos de distribuição por agência (% stacked, agência no eixo Y)
 # ===========================
-elif pagina == "Abertos":
+st.subheader("📊 Distribuições por Agência")
+
+# Tipo de financiamento por agência
+tipos_expandidos = []
+for _, row in df.iterrows():
+    for tf in row["tipo_financiamento_lista"]:
+        tf = tf.strip()
+        if tf:
+            tipos_expandidos.append({"agencia": row["agencia"], "tipo_financiamento": tf})
+
+if tipos_expandidos:
+    df_tipos = pd.DataFrame(tipos_expandidos)
+    tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
+    tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
+    fig, ax = plt.subplots(figsize=(8, 5))
+    tabela_tipos_pct.plot(kind="barh", stacked=True, ax=ax)
+    ax.set_title("Distribuição Percentual de Tipos de Financiamento por Agência")
+    ax.set_xlabel("% do total na agência")
+    ax.set_ylabel("Agência")
+    st.pyplot(fig)
+
+# Modalidade por agência
+modalidades_expandidas = []
+for _, row in df.iterrows():
+    for mod in row["modalidade_lista"]:
+        mod = mod.strip()
+        if mod:
+            modalidades_expandidas.append({"agencia": row["agencia"], "modalidade": mod})
+
+if modalidades_expandidas:
+    df_mods = pd.DataFrame(modalidades_expandidas)
+    tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
+    tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
+    fig, ax = plt.subplots(figsize=(8, 5))
+    tabela_mods_pct.plot(kind="barh", stacked=True, ax=ax)
+    ax.set_title("Distribuição Percentual de Modalidades por Agência")
+    ax.set_xlabel("% do total na agência")
+    ax.set_ylabel("Agência")
+    st.pyplot(fig)
+
+# ===========================
+# Exibição por página
+# ===========================
+if pagina == "Abertos":
     st.subheader("📢 Editais de Fomento Abertos")
-    df_abertos = df[df["data_fim"] >= pd.Timestamp.today()]
+    df_abertos = df_filtrado[df_filtrado["data_fim"] >= pd.Timestamp.today()]
     if not df_abertos.empty:
         for _, row in df_abertos.iterrows():
             with st.container():
@@ -193,9 +223,6 @@ elif pagina == "Abertos":
     else:
         st.warning("Nenhum edital aberto disponível no momento.")
 
-# ===========================
-# Página Encerrados
-# ===========================
 elif pagina == "Encerrados":
     st.subheader("📚 Editais Encerrados")
     df_encerrados = df[df["data_fim"] < pd.Timestamp.today()]
@@ -215,12 +242,16 @@ mensagem = st.sidebar.text_area("Mensagem")
 
 if st.sidebar.button("Enviar"):
     try:
+        # Autenticação com a service account
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(
             st.secrets["gcp_service_account"], scopes=scope
         )
         client = gspread.authorize(creds)
+
+        # Abrir planilha de feedbacks (precisa existir no Google Sheets!)
         sheet = client.open("feedback_editais").sheet1
+
         sheet.append_row([nome, email, mensagem, str(datetime.now())])
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
