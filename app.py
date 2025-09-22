@@ -114,10 +114,11 @@ pagina = st.radio("📌 Navegação", ["Inicial", "Abertos", "Encerrados"], hori
 with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
-    - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
+    - Os editais encerrados foram mantidos para prospectar futuras oportunidades.
+    - O único filtro aplicado na construção do banco de dados foi o período (a partir de 2023); considerando que mesmo editais não alinhados podem trazer ideias e mostrar tendências.
+    - Os temas estão resumidos de forma muito objetiva; recomenda-se ler o edital completo, visto que muitos são transversais.
     - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
     """)
-
 # ===========================
 # Paleta de cores pastel para gráficos
 # ===========================
