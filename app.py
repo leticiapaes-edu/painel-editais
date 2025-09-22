@@ -114,11 +114,22 @@ pagina = st.radio("📌 Navegação", ["Inicial", "Abertos", "Encerrados"], hori
 with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
-    - Os editais encerrados foram mantidos para prospectar futuras oportunidades.
-    - O único filtro aplicado na construção do banco de dados foi o período (a partir de 2023); considerando que mesmo editais não alinhados podem trazer ideias e mostrar tendências.
-    - Os temas estão resumidos de forma muito objetiva; recomenda-se ler o edital completo, visto que muitos são transversais.
+    - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
     - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
     """)
+
+# ===========================
+# Paleta de cores pastel para gráficos
+# ===========================
+cores_pastel = [
+    "#A8DADC",  # azul pastel
+    "#F4A261",  # laranja pastel
+    "#E9C46A",  # amarelo pastel
+    "#90BE6D",  # verde pastel
+    "#F6BD60",  # bege pastel
+    "#B56576",  # rosa queimado
+    "#6D597A",  # lilás suave
+]
 
 # ===========================
 # Página Inicial
@@ -153,7 +164,13 @@ if pagina == "Inicial":
             tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
             tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
             fig, ax = plt.subplots(figsize=(5, 3))
-            tabela_tipos_pct.plot(kind="barh", stacked=True, ax=ax, width=0.6)
+            tabela_tipos_pct.plot(
+                kind="barh",
+                stacked=True,
+                ax=ax,
+                width=0.6,
+                color=cores_pastel[:len(tabela_tipos_pct.columns)]
+            )
 
             ax.set_title("Distribuição de Tipos de Financiamento", fontsize=10)
             ax.set_xlabel("%", fontsize=8)
@@ -186,7 +203,13 @@ if pagina == "Inicial":
             tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
             tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
             fig, ax = plt.subplots(figsize=(5, 3))
-            tabela_mods_pct.plot(kind="barh", stacked=True, ax=ax, width=0.6)
+            tabela_mods_pct.plot(
+                kind="barh",
+                stacked=True,
+                ax=ax,
+                width=0.6,
+                color=cores_pastel[:len(tabela_mods_pct.columns)]
+            )
 
             ax.set_title("Distribuição de Modalidades", fontsize=10)
             ax.set_xlabel("%", fontsize=8)
@@ -273,4 +296,3 @@ if st.sidebar.button("Enviar"):
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
         st.sidebar.error(f"Erro ao salvar feedback: {e}")
-
