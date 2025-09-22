@@ -116,6 +116,8 @@ with st.expander("📌 Orientações", expanded=True):
     - A lista é atualizada semanalmente, sempre às segundas.
     - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
     - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
+    - O único filtro aplicado na construção do banco de dados foi o período (a partir de 2023); mesmo editais não alinhados podem trazer ideias e mostrar tendências.
+    - Os temas estão resumidos de forma muito objetiva; recomenda-se ler o edital completo, considerando que muitos são transversais.
     """)
 
 # ===========================
