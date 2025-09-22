@@ -1,4 +1,4 @@
-# app (10).py
+# app (12).py
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -105,22 +105,24 @@ else:
     df_filtrado = pd.DataFrame()
 
 # ===========================
-# Navegação principal
+# Navegação principal (no topo da página)
 # ===========================
-pagina = st.sidebar.radio("📌 Navegação", ["Inicial", "Abertos", "Encerrados"])
+pagina = st.radio("📌 Navegação", ["Inicial", "Abertos", "Encerrados"], horizontal=True)
+
+# ===========================
+# Orientações (em todas as páginas)
+# ===========================
+with st.expander("📌 Orientações", expanded=True):
+    st.markdown("""
+    - A lista é atualizada semanalmente, sempre às segundas.
+    - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
+    - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
+    """)
 
 # ===========================
 # Página Inicial
 # ===========================
 if pagina == "Inicial":
-    with st.expander("📌 Orientações", expanded=True):
-        st.markdown("""
-        - A lista é atualizada semanalmente, sempre às segundas.
-        - Os editais encerrados foram mantidos para possibilitar a análise para futuras oportunidades.
-        - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
-        """)
-
-    # Visão geral
     if not df.empty:
         st.subheader("📈 Visão Geral dos Editais")
         total = len(df)
@@ -145,12 +147,17 @@ if pagina == "Inicial":
             df_tipos = pd.DataFrame(tipos_expandidos)
             tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
             tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
-            fig, ax = plt.subplots(figsize=(8, 5))
-            tabela_tipos_pct.plot(kind="barh", stacked=True, ax=ax)
-            ax.set_title("Distribuição Percentual de Tipos de Financiamento por Agência")
-            ax.set_xlabel("% do total na agência")
-            ax.set_ylabel("Agência")
-            ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.3), ncol=2)
+            fig, ax = plt.subplots(figsize=(5, 3))
+            tabela_tipos_pct.plot(kind="barh", stacked=True, ax=ax, width=0.6)
+
+            ax.set_title("Distribuição de Tipos de Financiamento", fontsize=10)
+            ax.set_xlabel("%", fontsize=8)
+            ax.set_ylabel("Agência", fontsize=8)
+
+            for container in ax.containers:
+                ax.bar_label(container, fmt="%.0f%%", fontsize=7, label_type="center")
+
+            ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=3, fontsize=7, frameon=False)
             st.pyplot(fig)
 
         modalidades_expandidas = []
@@ -162,12 +169,17 @@ if pagina == "Inicial":
             df_mods = pd.DataFrame(modalidades_expandidas)
             tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
             tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
-            fig, ax = plt.subplots(figsize=(8, 5))
-            tabela_mods_pct.plot(kind="barh", stacked=True, ax=ax)
-            ax.set_title("Distribuição Percentual de Modalidades por Agência")
-            ax.set_xlabel("% do total na agência")
-            ax.set_ylabel("Agência")
-            ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.3), ncol=2)
+            fig, ax = plt.subplots(figsize=(5, 3))
+            tabela_mods_pct.plot(kind="barh", stacked=True, ax=ax, width=0.6)
+
+            ax.set_title("Distribuição de Modalidades", fontsize=10)
+            ax.set_xlabel("%", fontsize=8)
+            ax.set_ylabel("Agência", fontsize=8)
+
+            for container in ax.containers:
+                ax.bar_label(container, fmt="%.0f%%", fontsize=7, label_type="center")
+
+            ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=3, fontsize=7, frameon=False)
             st.pyplot(fig)
 
     # Nuvem de palavras
@@ -236,3 +248,4 @@ if st.sidebar.button("Enviar"):
         st.sidebar.success("✅ Feedback enviado com sucesso!")
     except Exception as e:
         st.sidebar.error(f"Erro ao salvar feedback: {e}")
+
