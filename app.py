@@ -172,9 +172,11 @@ if pagina == "Inicial":
                 y="agencia",
                 color="tipo_financiamento",
                 orientation="h",
-                color_discrete_sequence=cores_pastel
+                color_discrete_sequence=cores_pastel,
+                text="tipo_financiamento" # Adiciona o texto para o hover
             )
-            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{color}<extra></extra>")
+            # Atualiza o template para usar o 'text'
+            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>")
             fig.update_layout(barmode="stack", title="Distribuição de Tipos de Financiamento", xaxis_title="%", yaxis_title="Agência")
             st.plotly_chart(fig, use_container_width=True)
 
@@ -197,9 +199,11 @@ if pagina == "Inicial":
                 y="agencia",
                 color="modalidade",
                 orientation="h",
-                color_discrete_sequence=cores_pastel
+                color_discrete_sequence=cores_pastel,
+                text="modalidade" # Adiciona o texto para o hover
             )
-            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{color}<extra></extra>")
+            # Atualiza o template para usar o 'text'
+            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>")
             fig.update_layout(barmode="stack", title="Distribuição de Modalidades", xaxis_title="%", yaxis_title="Agência")
             st.plotly_chart(fig, use_container_width=True)
 
