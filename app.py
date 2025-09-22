@@ -63,7 +63,7 @@ if not df.empty:
 
     prazo_sel = st.sidebar.selectbox(
         "Prazo de inscrição",
-        ["Todos", "Até 7 dias", "Mais de 7 dias", "Encerrados"]
+        ["Todos", "Até 7 dias", "Mais de 7 dias"]
     )
 else:
     agencia_sel = "Todos"
@@ -99,8 +99,7 @@ if not df.empty:
             df_filtrado = df_filtrado[mask & (delta >= 0) & (delta <= 7)]
         elif prazo_sel == "Mais de 7 dias":
             df_filtrado = df_filtrado[mask & (delta > 7)]
-        elif prazo_sel == "Encerrados":
-            df_filtrado = df_filtrado[mask & (delta < 0)]
+        
 else:
     df_filtrado = pd.DataFrame()
 
