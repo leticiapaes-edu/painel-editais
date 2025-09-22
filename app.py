@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+import plotly.express as px
 
 # ===========================
 # Configuração inicial
@@ -148,7 +149,7 @@ if pagina == "Inicial":
             st.write(f"**Ano mais recente:** {int(por_ano.index.max())}")
 
         # ===========================
-        # Distribuições por Agência
+        # Distribuições por Agência (Plotly interativo)
         # ===========================
         st.subheader("📊 Distribuições por Agência")
 
@@ -163,33 +164,19 @@ if pagina == "Inicial":
             df_tipos = pd.DataFrame(tipos_expandidos)
             tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
             tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
-            fig, ax = plt.subplots(figsize=(5, 3))
-            tabela_tipos_pct.plot(
-                kind="barh",
-                stacked=True,
-                ax=ax,
-                width=0.6,
-                color=cores_pastel[:len(tabela_tipos_pct.columns)]
+
+            df_tipos_plot = tabela_tipos_pct.reset_index().melt(id_vars="agencia", var_name="tipo_financiamento", value_name="percentual")
+            fig = px.bar(
+                df_tipos_plot,
+                x="percentual",
+                y="agencia",
+                color="tipo_financiamento",
+                orientation="h",
+                color_discrete_sequence=cores_pastel
             )
-
-            ax.set_title("Distribuição de Tipos de Financiamento", fontsize=10)
-            ax.set_xlabel("%", fontsize=8)
-            ax.set_ylabel("Agência", fontsize=8)
-
-            for container in ax.containers:
-                ax.bar_label(container, fmt="%.0f%%", fontsize=7, label_type="center")
-
-            ax.legend(
-                loc='upper center',
-                bbox_to_anchor=(0.5, -0.15),
-                ncol=3,
-                fontsize=7,
-                frameon=False
-            )
-
-            plt.tight_layout()
-            plt.subplots_adjust(bottom=0.25)
-            st.pyplot(fig)
+            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{color}<extra></extra>")
+            fig.update_layout(barmode="stack", title="Distribuição de Tipos de Financiamento", xaxis_title="%", yaxis_title="Agência")
+            st.plotly_chart(fig, use_container_width=True)
 
         # Modalidade por agência
         modalidades_expandidas = []
@@ -202,33 +189,19 @@ if pagina == "Inicial":
             df_mods = pd.DataFrame(modalidades_expandidas)
             tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
             tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
-            fig, ax = plt.subplots(figsize=(5, 3))
-            tabela_mods_pct.plot(
-                kind="barh",
-                stacked=True,
-                ax=ax,
-                width=0.6,
-                color=cores_pastel[:len(tabela_mods_pct.columns)]
+
+            df_mods_plot = tabela_mods_pct.reset_index().melt(id_vars="agencia", var_name="modalidade", value_name="percentual")
+            fig = px.bar(
+                df_mods_plot,
+                x="percentual",
+                y="agencia",
+                color="modalidade",
+                orientation="h",
+                color_discrete_sequence=cores_pastel
             )
-
-            ax.set_title("Distribuição de Modalidades", fontsize=10)
-            ax.set_xlabel("%", fontsize=8)
-            ax.set_ylabel("Agência", fontsize=8)
-
-            for container in ax.containers:
-                ax.bar_label(container, fmt="%.0f%%", fontsize=7, label_type="center")
-
-            ax.legend(
-                loc='upper center',
-                bbox_to_anchor=(0.5, -0.15),
-                ncol=3,
-                fontsize=7,
-                frameon=False
-            )
-
-            plt.tight_layout()
-            plt.subplots_adjust(bottom=0.25)
-            st.pyplot(fig)
+            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{color}<extra></extra>")
+            fig.update_layout(barmode="stack", title="Distribuição de Modalidades", xaxis_title="%", yaxis_title="Agência")
+            st.plotly_chart(fig, use_container_width=True)
 
         # Nuvem de palavras
         if "tema_lista" in df.columns:
