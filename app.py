@@ -25,7 +25,7 @@ st.title("📊 Painel de Editais de Fomento à Pesquisa e Extensão")
 @st.cache_data
 @st.cache_data
 def carregar_dados():
-    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFMz-uqdjjnSn71QR9h1vHofVFbO4gwG_lKJ7-MIkCDfU792Bodl1ctNcP9Vqh9ocWiVxAouwWGeac/pub?gid=313632666&single=true&output=csv"
+    url = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4/export?format=csv&gid=313632666"
     df = pd.read_csv(url, sep=";")  # 👈 diferença: separador ajustado
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     return df
