@@ -118,24 +118,24 @@ else:
     df_filtrado = pd.DataFrame()
 
 # ===========================
-# Navegação principal (no topo da página)
+# Navegação principal
 # ===========================
 pagina = st.radio("📌 Navegação", ["Inicial", "Abertos", "Encerrados"], horizontal=True)
 
 # ===========================
-# Orientações (em todas as páginas)
+# Orientações
 # ===========================
 with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
     - A lista é atualizada semanalmente, sempre às segundas.
     - Os editais encerrados foram mantidos para prospectar futuras oportunidades.
-    - O único filtro aplicado na construção do banco de dados foi o período (a partir de 2023); considerando que mesmo editais não alinhados podem trazer ideias e mostrar tendências.
-    - Os temas estão resumidos de forma muito objetiva; recomenda-se ler o edital completo, visto que muitos são transversais.
+    - O único filtro aplicado na construção do banco de dados foi o período (a partir de 2023).
+    - Os temas estão resumidos de forma objetiva; recomenda-se ler o edital completo, visto que muitos são transversais.
     - Esse é um painel experimental. Em caso de erro, dúvidas ou sugestões, utilize a caixinha no menu lateral.
     """)
 
 # ===========================
-# Paleta de cores pastel para gráficos
+# Paleta de cores pastel
 # ===========================
 cores_pastel = [
     "#A8DADC", "#F4A261", "#E9C46A",
@@ -143,9 +143,79 @@ cores_pastel = [
 ]
 
 # ===========================
+# Página Inicial
+# ===========================
+if pagina == "Inicial":
+    if not df.empty:
+        st.subheader("📈 Visão Geral dos Editais")
+        total = len(df)
+        por_agencia = df['agencia'].value_counts()
+        por_ano = df['data_fim'].dt.year.value_counts().sort_index()
+
+        st.write(f"**Total de editais carregados:** {total}")
+        st.write(f"**Número de agências distintas:** {len(por_agencia)}")
+        if not por_ano.empty:
+            st.write(f"**Ano mais antigo:** {int(por_ano.index.min())}")
+            st.write(f"**Ano mais recente:** {int(por_ano.index.max())}")
+
+        # Gráfico: Tipos de financiamento
+        st.subheader("📊 Distribuições por Agência")
+
+        tipos_expandidos = []
+        if "tipo_financiamento_lista" in df.columns:
+            for _, row in df.iterrows():
+                for tf in row["tipo_financiamento_lista"]:
+                    if isinstance(tf, str) and tf.strip():
+                        tipos_expandidos.append({"agencia": row["agencia"], "tipo_financiamento": tf.strip()})
+
+        if tipos_expandidos:
+            df_tipos = pd.DataFrame(tipos_expandidos)
+            tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
+            tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
+            df_tipos_plot = tabela_tipos_pct.reset_index().melt(id_vars="agencia", var_name="tipo_financiamento", value_name="percentual")
+
+            fig = px.bar(df_tipos_plot, x="percentual", y="agencia", color="tipo_financiamento",
+                         orientation="h", color_discrete_sequence=cores_pastel, text="tipo_financiamento")
+            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>")
+            fig.update_layout(barmode="stack", title="Distribuição de Tipos de Financiamento", xaxis_title="%", yaxis_title="Agência")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # Gráfico: Modalidades
+        modalidades_expandidas = []
+        if "modalidade_lista" in df.columns:
+            for _, row in df.iterrows():
+                for mod in row["modalidade_lista"]:
+                    if isinstance(mod, str) and mod.strip():
+                        modalidades_expandidas.append({"agencia": row["agencia"], "modalidade": mod.strip()})
+
+        if modalidades_expandidas:
+            df_mods = pd.DataFrame(modalidades_expandidas)
+            tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
+            tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
+            df_mods_plot = tabela_mods_pct.reset_index().melt(id_vars="agencia", var_name="modalidade", value_name="percentual")
+
+            fig = px.bar(df_mods_plot, x="percentual", y="agencia", color="modalidade",
+                         orientation="h", color_discrete_sequence=cores_pastel, text="modalidade")
+            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>")
+            fig.update_layout(barmode="stack", title="Distribuição de Modalidades", xaxis_title="%", yaxis_title="Agência")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # Nuvem de palavras
+        if "tema_lista" in df.columns:
+            termos = [t.strip() for lista in df["tema_lista"] for t in lista if isinstance(t, str) and t.strip()]
+            if termos:
+                freq = Counter(termos)
+                wc = WordCloud(width=600, height=300, background_color="white").generate_from_frequencies(freq)
+                fig, ax = plt.subplots(figsize=(6, 3))
+                ax.imshow(wc, interpolation="bilinear")
+                ax.axis("off")
+                st.subheader("☁️ Principais temas")
+                st.pyplot(fig)
+
+# ===========================
 # Página Abertos
 # ===========================
-if pagina == "Abertos":
+elif pagina == "Abertos":
     st.subheader("📢 Editais de Fomento Abertos")
     df_abertos = df_filtrado[df_filtrado["data_fim"] >= pd.Timestamp.today()]
     if not df_abertos.empty:
