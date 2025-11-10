@@ -24,7 +24,7 @@ st.title("📊 Painel de Editais de Fomento à Pesquisa e Extensão")
 # ===========================
 @st.cache_data
 def carregar_dados():
-    url = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4/gviz/tq?tqx=out:csv&sheet=editais_abertos"
+    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFMz-uqdjjnSn71QR9h1vHofVFbO4gwG_lKJ7-MIkCDfU792Bodl1ctNcP9Vqh9ocWiVxAouwWGeac/pub?gid=313632666&single=true&output=csv"
     df = pd.read_csv(url)
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     return df
