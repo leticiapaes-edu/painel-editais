@@ -67,21 +67,21 @@ if not df.empty:
     )
 
     # ===========================
-    # NOVO: Filtro por titularidade exigida (proponente)
+    # NOVO: Filtro por perfil exigido (proponente)
     # ===========================
-    col_titularidade = "titularidade exigida (proponente)"
-    if col_titularidade in df.columns:
-        titularidades = sorted(df[col_titularidade].dropna().unique().tolist())
-        titularidade_sel = st.sidebar.multiselect("Titularidade exigida (proponente)", titularidades)
+    col_perfil = "perfil exigido (proponente)"
+    if col_perfil in df.columns:
+        perfis = sorted(df[col_perfil].dropna().unique().tolist())
+       perfil_sel = st.sidebar.multiselect("perfil exigido (proponente)", perfis)
     else:
-        titularidade_sel = []
+        perfil_sel = []
 else:
     agencia_sel = "Todos"
     modalidade_sel = []
     tema_sel = []
     ano_sel = []
     prazo_sel = "Todos"
-    titularidade_sel = []
+    perfil_sel = []
 
 # ===========================
 # Aplicar filtros
@@ -111,9 +111,9 @@ if not df.empty:
         elif prazo_sel == "Mais de 7 dias":
             df_filtrado = df_filtrado[mask & (delta > 7)]
 
-    # ✅ Aplicar filtro de titularidade exigida (proponente)
-    if titularidade_sel:
-        df_filtrado = df_filtrado[df_filtrado[col_titularidade].isin(titularidade_sel)]
+    # ✅ Aplicar filtro de perfil exigido (proponente)
+    if perfil_sel:
+        df_filtrado = df_filtrado[df_filtrado[col_perfil].isin(perfil_sel)]
 else:
     df_filtrado = pd.DataFrame()
 
@@ -237,7 +237,7 @@ elif pagina == "Abertos":
                 st.write(f"📌 Agência: {row.get('agencia','')}")
                 st.write(f"🎓 Modalidade: {row.get('modalidade','')}")
                 st.write(f"💰 Tipo de financiamento: {row.get('tipo_financiamento','')}")
-                st.write(f"👤 Titularidade exigida: {row.get(col_titularidade, '')}")
+                st.write(f"👤 Perfil exigido (proponente): {row.get(col_perfil, '')}")
                 inicio_txt = row['data_inicio'].date() if pd.notna(row.get('data_inicio')) else ""
                 fim_txt = row['data_fim'].date() if pd.notna(row.get('data_fim')) else ""
                 st.write(f"🗓️ Início: {inicio_txt} | Fim: {fim_txt}")
