@@ -72,7 +72,7 @@ if not df.empty:
     col_perfil = "perfil exigido (proponente)"
     if col_perfil in df.columns:
         perfis = sorted(df[col_perfil].dropna().unique().tolist())
-       perfil_sel = st.sidebar.multiselect("perfil exigido (proponente)", perfis)
+        perfil_sel = st.sidebar.multiselect("Perfil exigido (proponente)", perfis)
     else:
         perfil_sel = []
 else:
@@ -111,7 +111,7 @@ if not df.empty:
         elif prazo_sel == "Mais de 7 dias":
             df_filtrado = df_filtrado[mask & (delta > 7)]
 
-    # ✅ Aplicar filtro de perfil exigido (proponente)
+    # Aplicar filtro de perfil exigido (proponente)
     if perfil_sel:
         df_filtrado = df_filtrado[df_filtrado[col_perfil].isin(perfil_sel)]
 else:
@@ -143,91 +143,9 @@ cores_pastel = [
 ]
 
 # ===========================
-# Página Inicial
-# ===========================
-if pagina == "Inicial":
-    if not df.empty:
-        st.subheader("📈 Visão Geral dos Editais")
-        total = len(df)
-        por_agencia = df['agencia'].value_counts()
-        por_ano = df['data_fim'].dt.year.value_counts().sort_index()
-
-        st.write(f"**Total de editais carregados:** {total}")
-        st.write(f"**Número de agências distintas:** {len(por_agencia)}")
-        if not por_ano.empty:
-            st.write(f"**Ano mais antigo:** {int(por_ano.index.min())}")
-            st.write(f"**Ano mais recente:** {int(por_ano.index.max())}")
-
-        # Distribuição de tipos de financiamento
-        st.subheader("📊 Distribuições por Agência")
-
-        tipos_expandidos = []
-        for _, row in df.iterrows():
-            for tf in row["tipo_financiamento_lista"]:
-                if tf.strip():
-                    tipos_expandidos.append({"agencia": row["agencia"], "tipo_financiamento": tf.strip()})
-
-        if tipos_expandidos:
-            df_tipos = pd.DataFrame(tipos_expandidos)
-            tabela_tipos = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
-            tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
-            df_tipos_plot = tabela_tipos_pct.reset_index().melt(id_vars="agencia", var_name="tipo_financiamento", value_name="percentual")
-
-            fig = px.bar(
-                df_tipos_plot,
-                x="percentual",
-                y="agencia",
-                color="tipo_financiamento",
-                orientation="h",
-                color_discrete_sequence=cores_pastel,
-                text="tipo_financiamento"
-            )
-            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>")
-            fig.update_layout(barmode="stack", title="Distribuição de Tipos de Financiamento", xaxis_title="%", yaxis_title="Agência")
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Distribuição de modalidades
-        modalidades_expandidas = []
-        for _, row in df.iterrows():
-            for mod in row["modalidade_lista"]:
-                if mod.strip():
-                    modalidades_expandidas.append({"agencia": row["agencia"], "modalidade": mod.strip()})
-
-        if modalidades_expandidas:
-            df_mods = pd.DataFrame(modalidades_expandidas)
-            tabela_mods = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
-            tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
-            df_mods_plot = tabela_mods_pct.reset_index().melt(id_vars="agencia", var_name="modalidade", value_name="percentual")
-
-            fig = px.bar(
-                df_mods_plot,
-                x="percentual",
-                y="agencia",
-                color="modalidade",
-                orientation="h",
-                color_discrete_sequence=cores_pastel,
-                text="modalidade"
-            )
-            fig.update_traces(hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>")
-            fig.update_layout(barmode="stack", title="Distribuição de Modalidades", xaxis_title="%", yaxis_title="Agência")
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Nuvem de palavras
-        if "tema_lista" in df.columns:
-            termos = [t.strip() for lista in df["tema_lista"] for t in lista if t.strip()]
-            if termos:
-                freq = Counter(termos)
-                wc = WordCloud(width=600, height=300, background_color="white").generate_from_frequencies(freq)
-                fig, ax = plt.subplots(figsize=(6, 3))
-                ax.imshow(wc, interpolation="bilinear")
-                ax.axis("off")
-                st.subheader("☁️ Principais temas")
-                st.pyplot(fig)
-
-# ===========================
 # Página Abertos
 # ===========================
-elif pagina == "Abertos":
+if pagina == "Abertos":
     st.subheader("📢 Editais de Fomento Abertos")
     df_abertos = df_filtrado[df_filtrado["data_fim"] >= pd.Timestamp.today()]
     if not df_abertos.empty:
@@ -237,7 +155,7 @@ elif pagina == "Abertos":
                 st.write(f"📌 Agência: {row.get('agencia','')}")
                 st.write(f"🎓 Modalidade: {row.get('modalidade','')}")
                 st.write(f"💰 Tipo de financiamento: {row.get('tipo_financiamento','')}")
-                st.write(f"👤 Perfil exigido (proponente): {row.get(col_perfil, '')}")
+                st.write(f"👤 Perfil exigido: {row.get(col_perfil, '')}")
                 inicio_txt = row['data_inicio'].date() if pd.notna(row.get('data_inicio')) else ""
                 fim_txt = row['data_fim'].date() if pd.notna(row.get('data_fim')) else ""
                 st.write(f"🗓️ Início: {inicio_txt} | Fim: {fim_txt}")
@@ -247,35 +165,3 @@ elif pagina == "Abertos":
                 st.markdown("---")
     else:
         st.warning("Nenhum edital aberto disponível com os filtros aplicados.")
-
-# ===========================
-# Página Encerrados
-# ===========================
-elif pagina == "Encerrados":
-    st.subheader("📚 Editais Encerrados")
-    df_encerrados = df_filtrado[df_filtrado["data_fim"] < pd.Timestamp.today()]
-    if not df_encerrados.empty:
-        st.dataframe(df_encerrados)
-    else:
-        st.info("Nenhum edital encerrado disponível com os filtros aplicados.")
-
-# ===========================
-# Feedback
-# ===========================
-st.sidebar.markdown("## 📝 Reportar erro ou dúvida")
-nome = st.sidebar.text_input("Nome (opcional)")
-email = st.sidebar.text_input("E-mail (opcional)")
-mensagem = st.sidebar.text_area("Mensagem")
-
-if st.sidebar.button("Enviar"):
-    try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"], scopes=scope
-        )
-        client = gspread.authorize(creds)
-        sheet = client.open("feedback_editais").sheet1
-        sheet.append_row([nome, email, mensagem, str(datetime.now())])
-        st.sidebar.success("✅ Feedback enviado com sucesso!")
-    except Exception as e:
-        st.sidebar.error(f"Erro ao salvar feedback: {e}")
