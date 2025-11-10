@@ -23,17 +23,15 @@ st.title("📊 Painel de Editais de Fomento à Pesquisa e Extensão")
 # Carregar dados do Google Sheets
 # ===========================
 @st.cache_data
-@st.cache_data
 def carregar_dados():
     url = "https://docs.google.com/spreadsheets/d/1qNzze7JpzCwzEE2MQ4hhxWnUXuZvrQ0qpZoMT3BE8G4/export?format=csv&gid=313632666"
-    df = pd.read_csv(url, sep=";")  # 👈 diferença: separador ajustado
+    try:
+        df = pd.read_csv(url, sep=",", encoding="utf-8", on_bad_lines="skip")
+    except pd.errors.ParserError:
+        # se ainda falhar, tenta detectar automaticamente
+        df = pd.read_csv(url, sep=None, engine="python", on_bad_lines="skip")
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     return df
-
-
-df = carregar_dados()
-st.write("✅ Dados carregados:", df.shape)
-st.dataframe(df.head())
 
 # ===========================
 # Pré-processamento
