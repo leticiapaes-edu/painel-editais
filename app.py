@@ -1,3 +1,5 @@
+<conteúdo completo abaixo>
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -230,34 +232,10 @@ elif pagina == "Abertos":
                 fim_txt = row['data_fim'].date() if pd.notna(row.get('data_fim')) else ""
                 st.write(f"🗓️ Início: {inicio_txt} | Fim: {fim_txt}")
                 st.write(f"🏷️ Tema: {row.get('tema','')}")
-                if pd.notna(row.get('link', '')) and row.get('link','').strip():
-                st.markdown(f"[🔗 Acesse o edital]({row['link']})")
-                st.markdown("---")
 
+                # ❌ AQUI ESTÁ O TRECHO QUEBRADO:
+                if pd.notna(row.get('link', '')) and row.get('link','').strip():
+                    st.
+                st.markdown("---")
     else:
         st.warning("Nenhum edital aberto disponível com os filtros aplicados.")
-elif pagina == "Encerrados":
-    st.subheader("📁 Editais Encerrados")
-
-    df_encerrados = df_filtrado[df_filtrado["data_fim"] < pd.Timestamp.today()]
-
-    if not df_encerrados.empty:
-        df_encerrados = df_encerrados.sort_values("data_fim", ascending=False)
-
-        st.dataframe(
-            df_encerrados[[
-                "titulo",
-                "agencia",
-                "modalidade",
-                "tipo_financiamento",
-                "perfil exigido (proponente)",
-                "tema",
-                "data_inicio",
-                "data_fim",
-                "link"
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
-    else:
-        st.info("Nenhum edital encerrado encontrado com os filtros aplicados.")
