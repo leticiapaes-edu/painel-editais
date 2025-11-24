@@ -244,10 +244,8 @@ elif pagina == "Encerrados":
     df_encerrados = df_filtrado[df_filtrado["data_fim"] < pd.Timestamp.today()]
 
     if not df_encerrados.empty:
-        # Ordena do mais recente para o mais antigo
         df_encerrados = df_encerrados.sort_values("data_fim", ascending=False)
 
-        # Exibe a tabela
         st.dataframe(
             df_encerrados[[
                 "titulo",
@@ -260,14 +258,4 @@ elif pagina == "Encerrados":
                 "data_fim",
                 "link"
             ]],
-            use_container_width=True,
-            hide_index=True
-        )
-    else:
-        st.info("Nenhum edital encerrado encontrado com os filtros aplicados.")
-
-                if pd.notna(row.get('link', '')) and row.get('link','').strip():
-                    st.markdown(f"[🔗 Acesse o edital]({row['link']})")
-                st.markdown("---")
-    else:
-        st.info("Nenhum edital encerrado com os filtros aplicados.")
+            us
