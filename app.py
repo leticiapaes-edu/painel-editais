@@ -235,3 +235,28 @@ elif pagina == "Abertos":
                 st.markdown("---")
     else:
         st.warning("Nenhum edital aberto disponível com os filtros aplicados.")
+# ===========================
+# Página Encerrados
+# ===========================
+elif pagina == "Encerrados":
+    st.subheader("📁 Editais Encerrados")
+
+    df_encerrados = df_filtrado[df_filtrado["data_fim"] < pd.Timestamp.today()]
+
+    if not df_encerrados.empty:
+        for _, row in df_encerrados.sort_values("data_fim", ascending=False).iterrows():
+            with st.container():
+                st.markdown(f"**{row.get('titulo','(sem título)')}**")
+                st.write(f"📌 Agência: {row.get('agencia','')}")
+                st.write(f"🎓 Modalidade: {row.get('modalidade','')}")
+                st.write(f"💰 Tipo de financiamento: {row.get('tipo_financiamento','')}")
+                st.write(f"👤 Perfil exigido: {row.get(col_perfil, '')}")
+                inicio_txt = row['data_inicio'].date() if pd.notna(row.get('data_inicio')) else ""
+                fim_txt = row['data_fim'].date() if pd.notna(row.get('data_fim')) else ""
+                st.write(f"🗓️ Início: {inicio_txt} | Fim: {fim_txt}")
+                st.write(f"🏷️ Tema: {row.get('tema','')}")
+                if pd.notna(row.get('link', '')) and row.get('link','').strip():
+                    st.markdown(f"[🔗 Acesse o edital]({row['link']})")
+                st.markdown("---")
+    else:
+        st.info("Nenhum edital encerrado com os filtros aplicados.")
