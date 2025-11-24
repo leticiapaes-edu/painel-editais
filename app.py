@@ -231,13 +231,11 @@ elif pagina == "Abertos":
                 st.write(f"🗓️ Início: {inicio_txt} | Fim: {fim_txt}")
                 st.write(f"🏷️ Tema: {row.get('tema','')}")
                 if pd.notna(row.get('link', '')) and row.get('link','').strip():
-                    st.markdown(f"[🔗 Acesse o edital]({row['link']})")
+                st.markdown(f"[🔗 Acesse o edital]({row['link']})")
                 st.markdown("---")
+
     else:
         st.warning("Nenhum edital aberto disponível com os filtros aplicados.")
-# ===========================
-# Página Encerrados
-# ===========================
 elif pagina == "Encerrados":
     st.subheader("📁 Editais Encerrados")
 
@@ -258,4 +256,8 @@ elif pagina == "Encerrados":
                 "data_fim",
                 "link"
             ]],
-            us
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("Nenhum edital encerrado encontrado com os filtros aplicados.")
