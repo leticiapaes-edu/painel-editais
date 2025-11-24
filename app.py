@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from collections import Counter
 from datetime import datetime
-import gspread
-from google.oauth2.service_account import Credentials
 import plotly.express as px
 
 # ===========================
@@ -66,7 +64,6 @@ if not df.empty:
         ["Todos", "Até 7 dias", "Mais de 7 dias"]
     )
 
-    # Filtro por perfil exigido
     col_perfil = "perfil exigido (proponente)"
     if col_perfil in df.columns:
         perfis = sorted(df[col_perfil].dropna().unique().tolist())
@@ -128,153 +125,21 @@ pagina = st.radio("📌 Navegação", ["Inicial", "Abertos", "Encerrados"], hori
 # ===========================
 with st.expander("📌 Orientações", expanded=True):
     st.markdown("""
-    - A lista é atualizada semanalmente, sempre às segundas.
-    - Os editais encerrados foram mantidos para prospectar futuras oportunidades.
-    - O único filtro aplicado na construção do banco de dados foi o período (a partir de 2023).
-    - Os temas estão resumidos de forma objetiva; recomenda-se ler o edital completo.
-    - Painel experimental — sugestões são bem-vindas.
+    - A lista é atualizada semanalmente.
+    - Os editais encerrados servem para prospecção futura.
+    - Os temas estão resumidos; consulte o edital completo.
+    - Painel experimental — reporte erros no menu lateral.
     """)
 
 # ===========================
-# Página Inicial
+# Página Inicial — Gráficos
 # ===========================
 if pagina == "Inicial":
     if not df.empty:
         st.subheader("📈 Visão Geral dos Editais")
+
         total = len(df)
-        por_agencia = df['agencia'].value_counts()
-        por_ano = df['data_fim'].dt.year.value_counts().sort_index()
-
-        st.write(f"**Total de editais carregados:** {total}")
-        st.write(f"**Número de agências distintas:** {len(por_agencia)}")
-        if not por_ano.empty:
-            st.write(f"**Ano mais antigo:** {int(por_ano.index.min())}")
-            st.write(f"**Ano mais recente:** {int(por_ano.index.max())}")
-
-        # ===========================
-        # Gráfico: Tipos de financiamento
-        # ===========================
-        st.subheader("📊 Distribuições por Agência — Tipo de Financiamento")
-
-        tipos_expandidos = []
-        if "tipo_financiamento_lista" in df.columns:
-            for _, row in df.iterrows():
-                for tf in row["tipo_financiamento_lista"]:
-                    if isinstance(tf, str) and tf.strip():
-                        tipos_expandidos.append({
-                            "agencia": row["agencia"],
-                            "tipo_financiamento": tf.strip()
-                        })
-
-        if tipos_expandidos:
-            df_tipos = pd.DataFrame(tipos_expandidos)
-            tabela_tipos = df_tipos.pivot_table(
-                index="agencia",
-                columns="tipo_financiamento",
-                aggfunc=len,
-                fill_value=0
-            )
-            tabela_tipos_pct = tabela_tipos.div(tabela_tipos.sum(axis=1), axis=0) * 100
-            df_tipos_plot = tabela_tipos_pct.reset_index().melt(
-                id_vars="agencia",
-                var_name="tipo_financiamento",
-                value_name="percentual"
-            )
-
-            fig = px.bar(
-                df_tipos_plot,
-                x="percentual",
-                y="agencia",
-                color="tipo_financiamento",
-                orientation="h",
-                color_discrete_sequence=cores_pastel,
-                text="tipo_financiamento"
-            )
-            fig.update_traces(
-                hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>"
-            )
-            fig.update_layout(
-                barmode="stack",
-                xaxis_title="%",
-                yaxis_title="Agência"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-        # ===========================
-        # Gráfico: Modalidades
-        # ===========================
-        st.subheader("📊 Distribuições por Agência — Modalidades")
-
-        modalidades_expandidas = []
-        if "modalidade_lista" in df.columns:
-            for _, row in df.iterrows():
-                for mod in row["modalidade_lista"]:
-                    if isinstance(mod, str) and mod.strip():
-                        modalidades_expandidas.append({
-                            "agencia": row["agencia"],
-                            "modalidade": mod.strip()
-                        })
-
-        if modalidades_expandidas:
-            df_mods = pd.DataFrame(modalidades_expandidas)
-            tabela_mods = df_mods.pivot_table(
-                index="agencia",
-                columns="modalidade",
-                aggfunc=len,
-                fill_value=0
-            )
-            tabela_mods_pct = tabela_mods.div(tabela_mods.sum(axis=1), axis=0) * 100
-            df_mods_plot = tabela_mods_pct.reset_index().melt(
-                id_vars="agencia",
-                var_name="modalidade",
-                value_name="percentual"
-            )
-
-            fig = px.bar(
-                df_mods_plot,
-                x="percentual",
-                y="agencia",
-                color="modalidade",
-                orientation="h",
-                color_discrete_sequence=cores_pastel,
-                text="modalidade"
-            )
-            fig.update_traces(
-                hovertemplate="<b>%{y}</b><br>%{x:.1f}%% - %{text}<extra></extra>"
-            )
-            fig.update_layout(
-                barmode="stack",
-                xaxis_title="%",
-                yaxis_title="Agência"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-        # ===========================
-        # Nuvem de palavras
-        # ===========================
-        st.subheader("☁️ Principais temas")
-
-        if "tema_lista" in df.columns:
-            termos = [
-                t.strip()
-                for lista in df["tema_lista"]
-                for t in lista
-                if isinstance(t, str) and t.strip()
-            ]
-
-            if termos:
-                freq = Counter(termos)
-                wc = WordCloud(
-                    width=600,
-                    height=300,
-                    background_color="white"
-                ).generate_from_frequencies(freq)
-
-                fig, ax = plt.subplots(figsize=(6, 3))
-                ax.imshow(wc, interpolation="bilinear")
-                ax.axis("off")
-                st.pyplot(fig)
-encia = df["agencia"].value_counts()
+        por_agencia = df["agencia"].value_counts()
         por_ano = df["data_fim"].dt.year.value_counts().sort_index()
 
         st.write(f"**Total de editais carregados:** {total}")
@@ -283,38 +148,102 @@ encia = df["agencia"].value_counts()
             st.write(f"**Ano mais antigo:** {int(por_ano.index.min())}")
             st.write(f"**Ano mais recente:** {int(por_ano.index.max())}")
 
+        cores_pastel = [
+            "#A8DADC", "#F4A261", "#E9C46A",
+            "#90BE6D", "#F6BD60", "#B56576", "#6D597A"
+        ]
+
+        # ----------- Tipos de financiamento
+        st.subheader("📊 Distribuições por Agência — Tipo de Financiamento")
+
+        tipos_expandidos = []
+        for _, row in df.iterrows():
+            for tf in row["tipo_financiamento_lista"]:
+                if tf.strip():
+                    tipos_expandidos.append({
+                        "agencia": row["agencia"],
+                        "tipo_financiamento": tf.strip()
+                    })
+
+        if tipos_expandidos:
+            df_tipos = pd.DataFrame(tipos_expandidos)
+            tabela = df_tipos.pivot_table(index="agencia", columns="tipo_financiamento", aggfunc=len, fill_value=0)
+            tabela_pct = tabela.div(tabela.sum(axis=1), axis=0) * 100
+            melt = tabela_pct.reset_index().melt(id_vars="agencia", var_name="tipo_financiamento", value_name="percentual")
+
+            fig = px.bar(
+                melt, x="percentual", y="agencia",
+                color="tipo_financiamento", text="tipo_financiamento",
+                orientation="h", color_discrete_sequence=cores_pastel
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # ----------- Modalidades
+        st.subheader("📊 Distribuições por Agência — Modalidades")
+
+        mods = []
+        for _, row in df.iterrows():
+            for mod in row["modalidade_lista"]:
+                if mod.strip():
+                    mods.append({"agencia": row["agencia"], "modalidade": mod.strip()})
+
+        if mods:
+            df_mods = pd.DataFrame(mods)
+            tabela = df_mods.pivot_table(index="agencia", columns="modalidade", aggfunc=len, fill_value=0)
+            tabela_pct = tabela.div(tabela.sum(axis=1), axis=0) * 100
+            melt = tabela_pct.reset_index().melt(id_vars="agencia", var_name="modalidade", value_name="percentual")
+
+            fig = px.bar(
+                melt, x="percentual", y="agencia",
+                color="modalidade", text="modalidade",
+                orientation="h", color_discrete_sequence=cores_pastel
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # ----------- Nuvem de palavras
+        st.subheader("☁️ Principais temas")
+
+        termos = [t.strip() for lista in df["tema_lista"] for t in lista if t.strip()]
+        if termos:
+            freq = Counter(termos)
+            wc = WordCloud(width=600, height=300, background_color="white").generate_from_frequencies(freq)
+            fig, ax = plt.subplots(figsize=(6, 3))
+            ax.imshow(wc, interpolation="bilinear")
+            ax.axis("off")
+            st.pyplot(fig)
+
 # ===========================
 # Página Abertos
 # ===========================
 elif pagina == "Abertos":
-    st.subheader("📢 Editais de Fomento Abertos")
+    st.subheader("📢 Editais Abertos")
 
     df_abertos = df_filtrado[df_filtrado["data_fim"] >= pd.Timestamp.today()]
 
     if not df_abertos.empty:
         for _, row in df_abertos.sort_values("data_fim").iterrows():
             with st.container():
-                st.markdown(f"**{row.get('titulo', '(sem título)')}**")
-                st.write(f"📌 Agência: {row.get('agencia', '')}")
-                st.write(f"🎓 Modalidade: {row.get('modalidade', '')}")
-                st.write(f"💰 Tipo de financiamento: {row.get('tipo_financiamento', '')}")
+                st.markdown(f"### {row.get('titulo', '(sem título)')}")
+                st.write(f"📌 Agência: {row['agencia']}")
+                st.write(f"🎓 Modalidade: {row['modalidade']}")
+                st.write(f"💰 Tipo: {row['tipo_financiamento']}")
                 st.write(f"👤 Perfil exigido: {row.get(col_perfil, '')}")
 
                 inicio_txt = row["data_inicio"].date() if pd.notna(row["data_inicio"]) else ""
                 fim_txt = row["data_fim"].date() if pd.notna(row["data_fim"]) else ""
-                st.write(f"🗓 Início: {inicio_txt} | Fim: {fim_txt}")
 
-                st.write(f"🏷 Tema: {row.get('tema', '')}")
+                st.write(f"🗓 {inicio_txt} → {fim_txt}")
+                st.write(f"🏷 Tema: {row['tema']}")
 
-                if pd.notna(row.get("link", "")) and row.get("link", "").strip():
+                if pd.notna(row["link"]) and row["link"].strip():
                     st.markdown(f"[🔗 Acesse o edital]({row['link']})")
 
                 st.markdown("---")
     else:
-        st.warning("Nenhum edital aberto disponível com os filtros aplicados.")
+        st.info("Nenhum edital aberto com os filtros aplicados.")
 
 # ===========================
-# Página Encerrados (TABELA)
+# Página Encerrados (Tabela)
 # ===========================
 elif pagina == "Encerrados":
     st.subheader("📁 Editais Encerrados")
@@ -342,4 +271,4 @@ elif pagina == "Encerrados":
             hide_index=True,
         )
     else:
-        st.info("Nenhum edital encerrado encontrado com os filtros aplicados.")
+        st.info("Nenhum edital encerrado com os filtros aplicados.")
